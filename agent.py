@@ -5,9 +5,33 @@ import shutil
 import uuid
 import re
 import os
-
 from api import register_node
+import shellingham # Optional: pip install shellingham to detect shell reliably
 
+def ensure_local_bin_in_path():
+    local_bin = os.path.expanduser("~/.local/bin")
+    path_statement = f'\n# Grid-X Path\nexport PATH="{local_bin}:$PATH"\n'
+
+    # Identify which config file to edit
+    shell_name = os.environ.get("SHELL", "")
+    if "zsh" in shell_name:
+        config_file = os.path.expanduser("~/.zshrc")
+    elif "bash" in shell_name:
+        config_file = os.path.expanduser("~/.bashrc")
+    else:
+        config_file = os.path.expanduser("~/.profile")
+
+    # Check if it's already there to avoid duplicates
+    if os.path.exists(config_file):
+        with open(config_file, "r") as f:
+            if local_bin in f.read():
+                return
+
+    # Append the path
+    with open(config_file, "a") as f:
+        f.write(path_statement)
+
+    print(f"✅ Added {local_bin} to {config_file}. Please run 'source {config_file}' or restart your terminal.")
 
 def get_config_path():
     config_dir = os.path.expanduser("~/.gridx")
@@ -70,7 +94,7 @@ def share_resources(cpu_req: int, memory_req_gb: int, gpu_req: int):
     if not shutil.which("docker"):
         print("Error: Docker is not installed or not in PATH.")
         return
-    
+
     cpu_total = get_cpu_count()
     mem_total = get_memory_gb()
     gpu_total = get_gpu_count()
@@ -107,7 +131,7 @@ def share_resources(cpu_req: int, memory_req_gb: int, gpu_req: int):
 
     if gpu_req > 0:
         # Note: Requires nvidia-container-toolkit installed on host
-        docker_cmd.append(f"--gpus all") 
+        docker_cmd.append(f"--gpus all")
 
     docker_cmd.append("linuxserver/openssh-server")
 
@@ -193,5 +217,4 @@ def stop_all_gridx_containers():
     for cid in out.splitlines():
         run_command(f"docker stop {cid}")
         print(f"🛑 Stopped {cid}")
-
 

@@ -1,17 +1,7 @@
 certifi==2026.1.4
 charset-normalizer==3.4.4
-filelock==3.20.3
-fsspec==2026.2.0
--e git+https://github.com/Mat-hew-24/Code-Init-26.git@13952b8fad6008d2e84fc0eb9a396235e5aba9de#egg=gridx
+-e git+ssh://git@github.com/Mat-hew-24/Code-Init-26.git@5384f0fb7408f4858ca467c910852c7af289ad13#egg=gridx
 idna==3.11
-Jinja2==3.1.6
-MarkupSafe==3.0.3
-mpmath==1.3.0
-networkx==3.6.1
-numpy==2.4.2
 requests==2.32.5
-setuptools==80.10.2
-sympy==1.14.0
-torch==2.10.0
-typing_extensions==4.15.0
+shellingham==1.5.4
 urllib3==2.6.3
