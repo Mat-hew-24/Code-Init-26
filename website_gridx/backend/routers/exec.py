@@ -16,7 +16,7 @@ router = APIRouter(prefix="/exec", tags=["exec"])
 
 
 class ExecRequest(BaseModel):
-    worker: str
+    worker: Optional[str] = None  # If None, auto-select best worker
     command: str
     timeout: Optional[int] = None  # Remove default for LLM workloads
     user_id: Optional[str] = "anonymous"
