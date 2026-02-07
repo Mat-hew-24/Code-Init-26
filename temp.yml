@@ -1,0 +1,113 @@
+
+  # ============== WORKER 1 ==============
+  worker1:
+    build: .
+    container_name: gridx-worker1
+    hostname: worker1
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+    volumes:
+      - /lib/modules:/lib/modules:ro
+      - worker1-docker:/var/lib/docker
+      - worker1-gridx:/root/.gridx
+    networks:
+      gridx-net:
+        ipv4_address: 172.20.0.11
+    environment:
+      - ROLE=worker
+      - WORKER_NAME=worker1
+    depends_on:
+      - hub
+    command: >
+      sh -c "
+        dockerd &
+        sleep 5
+        echo '=== WORKER1 READY ==='
+        echo 'Run: python worker.py setup'
+        tail -f /dev/null
+      "
+
+  # ============== WORKER 2 ==============
+  worker2:
+    build: .
+    container_name: gridx-worker2
+    hostname: worker2
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+    volumes:
+      - /lib/modules:/lib/modules:ro
+      - worker2-docker:/var/lib/docker
+      - worker2-gridx:/root/.gridx
+    networks:
+      gridx-net:
+        ipv4_address: 172.20.0.12
+    environment:
+      - ROLE=worker
+      - WORKER_NAME=worker2
+    depends_on:
+      - hub
+    command: >
+      sh -c "
+        dockerd &
+        sleep 5
+        echo '=== WORKER2 READY ==='
+        echo 'Run: python worker.py setup'
+        tail -f /dev/null
+      "
+
+  # ============== WORKER 3 ==============
+  worker3:
+    build: .
+    container_name: gridx-worker3
+    hostname: worker3
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+    volumes:
+      - /lib/modules:/lib/modules:ro
+      - worker3-docker:/var/lib/docker
+      - worker3-gridx:/root/.gridx
+    networks:
+      gridx-net:
+        ipv4_address: 172.20.0.13
+    environment:
+      - ROLE=worker
+      - WORKER_NAME=worker3
+    depends_on:
+      - hub
+    command: >
+      sh -c "
+        dockerd &
+        sleep 5
+        echo '=== WORKER3 READY ==='
+        echo 'Run: python worker.py setup'
+        tail -f /dev/null
+      "
+
+networks:
+  gridx-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+
+volumes:
+  hub-docker:
+  hub-gridx:
+  worker1-docker:
+  worker1-gridx:
+  worker2-docker:
+  worker2-gridx:
+  worker3-docker:
+  worker3-gridx:
