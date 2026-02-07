@@ -1,7 +1,8 @@
-certifi==2026.1.4
-charset-normalizer==3.4.4
--e git+ssh://git@github.com/Mat-hew-24/Code-Init-26.git@5384f0fb7408f4858ca467c910852c7af289ad13#egg=gridx
-idna==3.11
-requests==2.32.5
-shellingham==1.5.4
-urllib3==2.6.3
+# Grid-X Mesh Node Requirements
+docker>=6.1.0
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+psutil>=5.9.0
+kademlia>=2.2.2
+requests>=2.31.0
+pydantic>=2.0.0

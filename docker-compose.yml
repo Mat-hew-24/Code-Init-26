@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  # Seed node - always runs first
+  grid-seed:
+    build: .
+    ports:
+      - "8000:8000"
+      - "8468:8468"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - NODE_TYPE=seed
+    networks:
+      - gridx-mesh
+
+  # Worker node 1
+  grid-node1:
+    build: .
+    ports:
+      - "8001:8000"
+      - "8469:8468"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - NODE_TYPE=worker
+      - SEED_HOST=grid-seed
+    depends_on:
+      - grid-seed
+    networks:
+      - gridx-mesh
+
+  # Worker node 2
+  grid-node2:
+    build: .
+    ports:
+      - "8002:8000"
+      - "8470:8468"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - NODE_TYPE=worker
+      - SEED_HOST=grid-seed
+    depends_on:
+      - grid-seed
+    networks:
+      - gridx-mesh
+
+networks:
+  gridx-mesh:
+    driver: bridge
