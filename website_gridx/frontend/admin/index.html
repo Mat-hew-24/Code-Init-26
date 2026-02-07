@@ -628,8 +628,8 @@
       async function loadStats() {
         if (useMiddleware) {
           try {
-            const stats = await fetch(MIDDLEWARE_URL + "/stats").then(
-              (r) => r.json(),
+            const stats = await fetch(MIDDLEWARE_URL + "/stats").then((r) =>
+              r.json(),
             );
 
             document.getElementById("total-requests").textContent =
@@ -703,7 +703,9 @@
             workers.online || 0;
 
           const jobs = await fetch(API_BASE + "/jobs").then((r) => r.json());
-          const runningJobs = jobs.jobs ? jobs.jobs.filter(j => j.running).length : 0;
+          const runningJobs = jobs.jobs
+            ? jobs.jobs.filter((j) => j.running).length
+            : 0;
 
           // Set some basic stats
           document.getElementById("total-requests").textContent = "↻";
@@ -717,8 +719,8 @@
       async function loadLogs() {
         if (useMiddleware) {
           try {
-            const data = await fetch(MIDDLEWARE_URL + "/logs").then(
-              (r) => r.json(),
+            const data = await fetch(MIDDLEWARE_URL + "/logs").then((r) =>
+              r.json(),
             );
             const logs = data.logs || [];
 
@@ -781,9 +783,9 @@
       async function loadConfig() {
         if (useMiddleware) {
           try {
-            const config = await fetch(
-              MIDDLEWARE_URL + "/config",
-            ).then((r) => r.json());
+            const config = await fetch(MIDDLEWARE_URL + "/config").then((r) =>
+              r.json(),
+            );
             document.getElementById("config-display").textContent =
               JSON.stringify(config, null, 2);
           } catch (e) {
@@ -828,7 +830,7 @@
                 '<div class="no-data">Logs cleared</div>';
               activityData = new Array(30).fill(0);
               updateActivityChart();
-              
+
               // Reset stats
               document.getElementById("total-requests").textContent = "0";
               document.getElementById("success-count").textContent = "0";
