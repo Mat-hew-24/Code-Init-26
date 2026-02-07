@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from lockdown import run_task_and_get_results
+from lockdown import run_task_and_get_results, run_notebook_and_get_results
 from watcher import get_available_resources
 import time
 
@@ -14,6 +14,11 @@ class JobRequest(BaseModel):
     image: str
     command: str
     timeout: int = 30
+
+class NotebookRequest(BaseModel):
+    notebook_content: str
+    image: str = "jupyter/datascience-notebook:latest"
+    timeout: int = 300
 
 @app.get("/")
 async def root():
@@ -75,6 +80,58 @@ async def receive_job(job: JobRequest):
         return {
             "status": "completed",
             "exit_code": result["exit_code"],
+            "logs": result["logs"],
+            "container_id": result.get("container_id"),
+            "execution_time": time.time()
+        }
+
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+@app.post("/notebook")
+async def receive_notebook(notebook: NotebookRequest):
+    """Submit a Jupyter notebook for execution"""
+    try:
+        # Check if node is available
+        stats = get_available_resources()
+        
+        if not stats["is_idle"]:
+            raise HTTPException(
+                status_code=503, 
+                detail=f"Host is currently busy (CPU: {stats['cpu_usage']}%)"
+            )
+
+        # Validate notebook content
+        if not notebook.notebook_content:
+            raise HTTPException(
+                status_code=400, 
+                detail="Notebook content is required"
+            )
+
+        if notebook.timeout > 900:  # Max 15 minutes for notebooks
+            raise HTTPException(
+                status_code=400, 
+                detail="Timeout cannot exceed 900 seconds for notebooks"
+            )
+
+        print(f"Executing notebook on image {notebook.image}")
+        
+        # Execute the notebook
+        result = run_notebook_and_get_results(
+            notebook.notebook_content, 
+            notebook.image, 
+            notebook.timeout
+        )
+        
+        if result["status"] == "error":
+            raise HTTPException(status_code=500, detail=result["message"])
+
+        return {
+            "status": "completed",
+            "exit_code": result["exit_code"],
+            "executed_notebook": result["executed_notebook"],
             "logs": result["logs"],
             "container_id": result.get("container_id"),
             "execution_time": time.time()
