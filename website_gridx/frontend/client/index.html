@@ -233,6 +233,23 @@
             gap: 10px;
             margin-bottom: 16px;
             flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .action-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+        }
+        
+        .action-group label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
         }
 
         .btn {
@@ -255,9 +272,26 @@
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
-        .btn-run:hover:not(:disabled) {
+        .btn-analyze {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+        
+        .btn-analyze:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-safe {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-safe:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
         }
 
         .btn-clear {
@@ -271,16 +305,279 @@
             color: white;
         }
 
+        .btn-analyze {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+        
+        .btn-analyze:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+        }
+        
+        .btn-safe {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-safe:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .action-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: var(--bg-secondary);
+        }
+        
+        .action-group label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .analysis-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        
+        .analysis-panel.visible {
+            display: block;
+        }
+        
+        .analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .analysis-header h4 {
+            color: var(--primary);
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .issue-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .issue-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 4px solid;
+            font-size: 13px;
+        }
+        
+        .issue-item.high {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+        
+        .issue-item.medium {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+            color: #fcd34d;
+        }
+        
+        .issue-item.low {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+            color: #93c5fd;
+        }
+        
+        .job-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        
+        .job-panel.visible {
+            display: block;
+        }
+        
+        .job-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .job-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .job-status.running {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+        }
+        
+        .job-status.completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+        
+        .job-status.failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none !important;
         }
 
-        .output-section {
-            height: 280px;
+        .analysis-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        
+        .analysis-panel.visible {
+            display: block;
+        }
+        
+        .analysis-header {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .analysis-header h4 {
+            color: var(--primary);
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .issue-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .issue-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+        
+        .issue-item.high {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #fca5a5;
+        }
+        
+        .issue-item.medium {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+            color: #fcd34d;
+        }
+        
+        .issue-item.low {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: #3b82f6;
+            color: #93c5fd;
+        }
+        
+        .job-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        
+        .job-panel.visible {
+            display: block;
+        }
+        
+        .job-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .job-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .job-status.running {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fcd34d;
+        }
+        
+        .job-status.completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+        
+        .job-status.failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
         }
 
         .output-header {
@@ -512,15 +809,51 @@
                     <option value="">Select worker...</option>
                 </select>
                 <input type="text" class="command-input" id="command-input" placeholder="Enter shell command (or run Python from editor)">
+                
+                <div class="action-group">
+                    <label>🔍 Analysis:</label>
+                    <button class="btn btn-analyze" onclick="analyzeCode()" id="analyze-btn">
+                        <span>🔍</span>
+                        <span>Analyze Code</span>
+                    </button>
+                </div>
+                
+                <div class="action-group">
+                    <label>▶ Execute:</label>
+                    <button class="btn btn-safe" onclick="safeRunPython()" id="safe-run-btn">
+                        <span>🛡</span>
+                        <span>Safe Run</span>
+                    </button>
+                    <button class="btn btn-run" onclick="runPython()" id="run-python-btn">
+                        <span>▶</span>
+                        <span>Quick Run</span>
+                    </button>
+                </div>
+                
                 <button class="btn btn-run" onclick="runCommand()" id="run-btn">
                     <span>▶</span>
                     <span>Run Command</span>
                 </button>
-                <button class="btn btn-run" onclick="runPython()" id="run-python-btn">
-                    <span>▶</span>
-                    <span>Run Python</span>
-                </button>
                 <button class="btn btn-clear" onclick="clearOutput()">Clear</button>
+                <button class="btn btn-clear" onclick="toggleJobPanel()" id="jobs-btn">Jobs</button>
+            </div>
+
+            <!-- Code Analysis Panel -->
+            <div class="analysis-panel" id="analysis-panel">
+                <div class="analysis-header">
+                    <h4>Code Analysis Results</h4>
+                    <button class="btn btn-clear" onclick="hideAnalysis()" style="padding: 4px 8px; font-size: 11px;">Close</button>
+                </div>
+                <div id="analysis-results"></div>
+            </div>
+
+            <!-- Job Management Panel -->
+            <div class="job-panel" id="job-panel">
+                <div class="analysis-header">
+                    <h4>Current Job Status</h4>
+                    <button class="btn btn-clear" onclick="hideJobPanel()" style="padding: 4px 8px; font-size: 11px;">Close</button>
+                </div>
+                <div id="job-info"></div>
             </div>
 
             <div class="editor-section">
@@ -817,6 +1150,249 @@ print("\\nTraining complete!")
             document.getElementById('exec-time').textContent = '';
             document.getElementById('status-text').textContent = 'Ready';
             document.getElementById('status-dot').classList.add('ready');
+        }
+
+        // ============ NEW ENHANCED FUNCTIONALITY ============
+
+        let currentJobId = null;
+        let jobCheckInterval = null;
+
+        async function analyzeCode() {
+            const code = document.getElementById('code-editor').value.trim();
+            const analysisPanel = document.getElementById('analysis-panel');
+            const analysisResults = document.getElementById('analysis-results');
+            
+            if (!code) {
+                alert('Please enter some code to analyze');
+                return;
+            }
+
+            try {
+                const response = await api('/exec/analyze', 'POST', { code });
+                const { analysis, recommendation } = response;
+                
+                analysisResults.innerHTML = `
+                    <div style="margin-bottom: 16px;">
+                        <strong>Recommendation:</strong> 
+                        <span style="color: ${recommendation === 'safe' ? '#6ee7b7' : '#fca5a5'};">
+                            ${recommendation.toUpperCase()}
+                        </span>
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <strong>Analysis Summary:</strong> ${analysis.analysis_summary.total_issues} issues found
+                        (${analysis.analysis_summary.high_severity} high, ${analysis.analysis_summary.medium_severity} medium)
+                    </div>
+                    
+                    <div class="issue-list">
+                        ${analysis.issues.map(issue => `
+                            <div class="issue-item ${issue.severity}">
+                                <strong>Line ${issue.line}:</strong> ${issue.message}
+                                ${issue.suggestion ? `<br><em>Suggestion: ${issue.suggestion}</em>` : ''}
+                            </div>
+                        `).join('')}
+                        
+                        ${analysis.suggestions.length > 0 ? `
+                            <div style="margin-top: 16px;">
+                                <strong>General Suggestions:</strong>
+                                <ul style="margin: 8px 0; padding-left: 20px;">
+                                    ${analysis.suggestions.map(s => `<li>${s}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                analysisPanel.classList.add('visible');
+                
+            } catch (error) {
+                analysisResults.innerHTML = `<div class="issue-item high">Error analyzing code: ${error.message}</div>`;
+                analysisPanel.classList.add('visible');
+            }
+        }
+
+        async function safeRunPython() {
+            const worker = selectedWorker || document.getElementById('worker-select').value;
+            if (!worker) {
+                alert('Please select a worker first');
+                return;
+            }
+
+            const code = document.getElementById('code-editor').value.trim();
+            if (!code) {
+                alert('Please enter some Python code to execute');
+                return;
+            }
+
+            if (isExecuting) return;
+            isExecuting = true;
+
+            const outputBox = document.getElementById('output-box');
+            const statusText = document.getElementById('status-text');
+            const runBtn = document.getElementById('safe-run-btn');
+            const analyzeBtn = document.getElementById('analyze-btn');
+            
+            // Show loading
+            outputBox.innerHTML = `<div style="display: flex; align-items: center; gap: 10px; justify-content: center; height: 100%;">
+                <div class="loading-spinner"></div>
+                <span>Analyzing and executing code safely...</span>
+            </div>`;
+            outputBox.className = 'output-box running';
+            statusText.textContent = 'Safe execution starting...';
+            runBtn.disabled = true;
+            analyzeBtn.disabled = true;
+
+            try {
+                // Submit job for safe execution
+                const jobResponse = await api('/exec/safe-execute', 'POST', {
+                    worker: worker,
+                    code: code,
+                    user_id: 'web-client',
+                    allow_risky: false,
+                    timeout: null  // No timeout for LLM workloads
+                });
+
+                if (!jobResponse.success) {
+                    throw new Error(jobResponse.error || 'Failed to submit job');
+                }
+
+                currentJobId = jobResponse.job_id;
+                
+                // Show job panel
+                updateJobPanel(jobResponse.job_id);
+                document.getElementById('job-panel').classList.add('visible');
+                
+                // Start monitoring job
+                monitorJob(jobResponse.job_id);
+                
+            } catch (error) {
+                outputBox.textContent = 'Error: ' + error.message;
+                outputBox.className = 'output-box error';
+                statusText.textContent = '✗ Error';
+                isExecuting = false;
+                runBtn.disabled = false;
+                analyzeBtn.disabled = false;
+            }
+        }
+
+        async function monitorJob(jobId) {
+            if (!jobId) return;
+            
+            jobCheckInterval = setInterval(async () => {
+                try {
+                    const job = await api(`/exec/jobs/${jobId}`, 'GET');
+                    updateJobPanel(jobId, job);
+                    
+                    if (job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') {
+                        clearInterval(jobCheckInterval);
+                        jobCheckInterval = null;
+                        currentJobId = null;
+                        isExecuting = false;
+                        document.getElementById('safe-run-btn').disabled = false;
+                        document.getElementById('analyze-btn').disabled = false;
+                        
+                        // Show final results
+                        const outputBox = document.getElementById('output-box');
+                        const statusText = document.getElementById('status-text');
+                        
+                        if (job.status === 'completed' && job.result) {
+                            let output = '';
+                            if (job.result.output) output += job.result.output;
+                            if (job.result.error) {
+                                if (output) output += '\\n';
+                                output += '[STDERR]\\n' + job.result.error;
+                            }
+                            output += `\\n\\n[Job completed in ${job.metrics.execution_time.toFixed(2)}s]`;
+                            
+                            outputBox.textContent = output;
+                            outputBox.className = 'output-box' + (job.result.exit_code !== 0 ? ' error' : '');
+                            statusText.textContent = job.result.exit_code === 0 ? '✓ Completed successfully' : '✗ Completed with errors';
+                        } else {
+                            outputBox.textContent = `Job ${job.status}: ${job.error || 'Unknown error'}`;
+                            outputBox.className = 'output-box error';
+                            statusText.textContent = `✗ Job ${job.status}`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error monitoring job:', error);
+                }
+            }, 2000); // Check every 2 seconds
+        }
+
+        async function updateJobPanel(jobId, jobData = null) {
+            const jobInfo = document.getElementById('job-info');
+            
+            try {
+                const job = jobData || await api(`/exec/jobs/${jobId}`, 'GET');
+                
+                const progressPercent = Math.round(job.metrics.progress * 100);
+                const duration = job.metrics.execution_time || 0;
+                
+                jobInfo.innerHTML = `
+                    <div class="job-info">
+                        <span><strong>Job ID:</strong> ${job.job_id.substring(0, 8)}...</span>
+                        <span class="job-status ${job.status}">${job.status}</span>
+                        <span><strong>Worker:</strong> ${job.worker}</span>
+                        <span><strong>Duration:</strong> ${duration.toFixed(1)}s</span>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progressPercent}%"></div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--text-secondary);">
+                        <span>Progress: ${progressPercent}%</span>
+                        ${job.status === 'running' ? `
+                            <button class="btn btn-clear" onclick="cancelJob('${job.job_id}')" style="padding: 4px 12px; font-size: 11px;">
+                                Cancel Job
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+                
+            } catch (error) {
+                jobInfo.innerHTML = `<div class="issue-item high">Error loading job details: ${error.message}</div>`;
+            }
+        }
+
+        async function cancelJob(jobId) {
+            if (!confirm('Are you sure you want to cancel this job?')) return;
+            
+            try {
+                await api(`/exec/jobs/${jobId}/control`, 'POST', null, { action: 'cancel' });
+                if (jobCheckInterval) {
+                    clearInterval(jobCheckInterval);
+                    jobCheckInterval = null;
+                }
+                currentJobId = null;
+                isExecuting = false;
+                document.getElementById('safe-run-btn').disabled = false;
+                document.getElementById('analyze-btn').disabled = false;
+            } catch (error) {
+                alert('Failed to cancel job: ' + error.message);
+            }
+        }
+
+        function hideAnalysis() {
+            document.getElementById('analysis-panel').classList.remove('visible');
+        }
+
+        function hideJobPanel() {
+            document.getElementById('job-panel').classList.remove('visible');
+        }
+
+        function toggleJobPanel() {
+            const panel = document.getElementById('job-panel');
+            if (panel.classList.contains('visible')) {
+                hideJobPanel();
+            } else {
+                if (currentJobId) {
+                    updateJobPanel(currentJobId);
+                } else {
+                    document.getElementById('job-info').innerHTML = '<div>No active jobs</div>';
+                }
+                panel.classList.add('visible');
+            }
         }
 
         // Keyboard shortcuts
