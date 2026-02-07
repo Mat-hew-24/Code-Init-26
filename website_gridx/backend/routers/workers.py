@@ -48,7 +48,15 @@ def ping_all_workers():
     results = wrapper.ping_all_workers()
 
     online_count = sum(1 for r in results.values() if r.get("online"))
-    return {"workers": results, "online": online_count, "total": len(results)}
+    total_configured = len(results)
+    
+    return {
+        "workers": results, 
+        "online": online_count, 
+        "total": total_configured,
+        "configured": total_configured,
+        "offline": total_configured - online_count
+    }
 
 
 @router.get("/{name}")

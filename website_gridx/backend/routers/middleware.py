@@ -85,7 +85,28 @@ def middleware_health():
 @router.get("/stats")
 def get_middleware_stats():
     """Get request statistics"""
-    return _request_stats
+    # Count connected backend servers by checking common ports
+    backend_servers_online = 0
+    import socket
+    ports = [8000, 8001, 8002, 8003, 8004, 8005]
+    
+    for port in ports:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(0.1)
+                result = sock.connect_ex(('localhost', port))
+                if result == 0:
+                    backend_servers_online += 1
+        except:
+            pass
+    
+    return {
+        **_request_stats,
+        "backend_servers": backend_servers_online,
+        "success_rate": round((_request_stats["success"] / max(_request_stats["total"], 1)) * 100, 2),
+        "active_workers": len(_request_stats["by_worker"]),
+        "top_endpoints": list(_request_stats["by_endpoint"].keys())[:10]
+    }
 
 @router.get("/logs")
 def get_request_logs():
