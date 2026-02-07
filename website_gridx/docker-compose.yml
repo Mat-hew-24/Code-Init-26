@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # FastAPI Backend - Main API server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gridx-web-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - /etc/gridx:/etc/gridx:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.gridx:/root/.gridx
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - gridx-web
+
+  # Middleware - Request routing and monitoring
+  middleware:
+    build:
+      context: ./middleware
+      dockerfile: Dockerfile
+    container_name: gridx-web-middleware
+    ports:
+      - "7575:7575"
+    volumes:
+      - /etc/gridx:/etc/gridx:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - gridx-web
+
+networks:
+  gridx-web:
+    driver: bridge

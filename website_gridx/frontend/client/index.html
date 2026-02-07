@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid-X Client - Colab Lite</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+        .header {
+            background: #16213e;
+            padding: 15px 20px;
+            border-bottom: 2px solid #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            color: #00d9ff;
+            font-size: 20px;
+        }
+        .nav {
+            display: flex;
+            gap: 10px;
+        }
+        .nav a {
+            color: #00d9ff;
+            text-decoration: none;
+            padding: 6px 12px;
+            background: #0f3460;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .nav a:hover {
+            background: #1a1a2e;
+        }
+        .main-container {
+            display: flex;
+            height: calc(100vh - 56px);
+        }
+        .sidebar {
+            width: 280px;
+            background: #16213e;
+            border-right: 1px solid #0f3460;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .sidebar h2 {
+            color: #00d9ff;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .worker-list {
+            margin-bottom: 20px;
+        }
+        .worker-item {
+            padding: 10px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .worker-item:hover {
+            border-color: #0f3460;
+        }
+        .worker-item.selected {
+            border-color: #00d9ff;
+        }
+        .worker-item .name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .worker-item .info {
+            font-size: 12px;
+            color: #888;
+        }
+        .worker-item .status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .worker-item .status.online {
+            background: #00c853;
+            color: #000;
+        }
+        .worker-item .status.offline {
+            background: #ff5252;
+            color: #fff;
+        }
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+        }
+        .editor-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .editor-header h3 {
+            color: #00d9ff;
+            font-size: 14px;
+        }
+        .editor-tabs {
+            display: flex;
+            gap: 5px;
+        }
+        .editor-tab {
+            padding: 5px 12px;
+            background: #0f3460;
+            border: none;
+            color: #888;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .editor-tab.active {
+            background: #1a1a2e;
+            color: #00d9ff;
+        }
+        .code-editor {
+            flex: 1;
+            width: 100%;
+            background: #0a0a14;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            color: #fff;
+            resize: none;
+            line-height: 1.5;
+        }
+        .code-editor:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .btn-run {
+            background: #00c853;
+            color: #000;
+        }
+        .btn-run:hover {
+            background: #00e676;
+        }
+        .btn-clear {
+            background: #ff5252;
+            color: #fff;
+        }
+        .btn-upload {
+            background: #2196f3;
+            color: #fff;
+        }
+        .btn-save {
+            background: #ff9800;
+            color: #000;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .output-section {
+            height: 250px;
+            display: flex;
+            flex-direction: column;
+        }
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .output-header h3 {
+            color: #00d9ff;
+            font-size: 14px;
+        }
+        .output-box {
+            flex: 1;
+            background: #0a0a14;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: #0f0;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .output-box.error {
+            color: #ff5252;
+        }
+        .output-box.running {
+            color: #ffeb3b;
+        }
+        .worker-select {
+            padding: 8px;
+            background: #1a1a2e;
+            border: 1px solid #0f3460;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 13px;
+            min-width: 150px;
+        }
+        .file-input {
+            display: none;
+        }
+        .command-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: #1a1a2e;
+            border: 1px solid #0f3460;
+            color: #fff;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .command-input:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+        .quick-commands {
+            margin-top: 10px;
+        }
+        .quick-commands button {
+            padding: 4px 8px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            background: #0f3460;
+            border: none;
+            color: #888;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .quick-commands button:hover {
+            background: #1a1a2e;
+            color: #00d9ff;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 15px;
+            background: #0f3460;
+            font-size: 12px;
+            color: #888;
+        }
+        .no-workers {
+            text-align: center;
+            padding: 30px;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Grid-X Client - Colab Lite</h1>
+        <nav class="nav">
+            <a href="/host">Host Dashboard</a>
+            <a href="/onboard">+ Add Worker</a>
+            <a href="/client">Client Interface</a>
+            <a href="/admin">Admin View</a>
+        </nav>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h2>Available Workers</h2>
+            <div class="worker-list" id="worker-list">
+                <div class="no-workers">Loading workers...</div>
+            </div>
+
+            <h2>Quick Commands</h2>
+            <div class="quick-commands">
+                <button onclick="setCommand('python --version')">Python Ver</button>
+                <button onclick="setCommand('pip list')">Pip List</button>
+                <button onclick="setCommand('nvidia-smi')">GPU Info</button>
+                <button onclick="setCommand('free -h')">Memory</button>
+                <button onclick="setCommand('df -h')">Disk</button>
+                <button onclick="setCommand('ls -la')">List Files</button>
+                <button onclick="setCommand('pwd')">PWD</button>
+                <button onclick="setCommand('whoami')">Who Am I</button>
+                <button onclick="setCommand('hostname')">Hostname</button>
+                <button onclick="setCommand('cat /etc/os-release')">OS Info</button>
+                <button onclick="setCommand('python -c \"import torch; print(torch.cuda.is_available())\"')">PyTorch CUDA</button>
+            </div>
+
+            <h2 style="margin-top: 20px;">Templates</h2>
+            <div class="quick-commands">
+                <button onclick="loadTemplate('hello')">Hello World</button>
+                <button onclick="loadTemplate('numpy')">NumPy Test</button>
+                <button onclick="loadTemplate('torch')">PyTorch Test</button>
+                <button onclick="loadTemplate('train')">Simple Training</button>
+            </div>
+        </div>
+
+        <div class="workspace">
+            <div class="action-bar">
+                <select class="worker-select" id="worker-select">
+                    <option value="">Select worker...</option>
+                </select>
+                <input type="text" class="command-input" id="command-input" placeholder="Enter shell command (or run Python from editor)">
+                <button class="btn btn-run" onclick="runCommand()" id="run-btn">Run Command</button>
+                <button class="btn btn-run" onclick="runPython()" id="run-python-btn">Run Python</button>
+                <button class="btn btn-clear" onclick="clearOutput()">Clear</button>
+            </div>
+
+            <div class="editor-section">
+                <div class="editor-header">
+                    <h3>Python Editor</h3>
+                    <div class="editor-tabs">
+                        <button class="editor-tab active" onclick="switchTab('python')">Python</button>
+                        <button class="editor-tab" onclick="switchTab('shell')">Shell Script</button>
+                    </div>
+                </div>
+                <textarea class="code-editor" id="code-editor" placeholder="# Write your Python code here
+print('Hello from Grid-X!')
+
+# Example: Basic computation
+import sys
+print(f'Python version: {sys.version}')
+
+# Add your code below...
+"></textarea>
+            </div>
+
+            <div class="output-section">
+                <div class="output-header">
+                    <h3>Output</h3>
+                    <span id="exec-time"></span>
+                </div>
+                <div class="output-box" id="output-box">Ready. Select a worker and run code.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <span id="status-text">Ready</span>
+        <span id="worker-status">No worker selected</span>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let selectedWorker = null;
+        let currentTab = 'python';
+
+        // Code templates
+        const templates = {
+            hello: `# Hello World
+print("Hello from Grid-X!")
+print("This code is running on a remote worker.")
+`,
+            numpy: `# NumPy Test
+try:
+    import numpy as np
+    
+    # Create arrays
+    a = np.array([1, 2, 3, 4, 5])
+    b = np.array([10, 20, 30, 40, 50])
+    
+    print("Array a:", a)
+    print("Array b:", b)
+    print("Sum:", a + b)
+    print("Mean of a:", np.mean(a))
+    print("NumPy version:", np.__version__)
+except ImportError:
+    print("NumPy not installed. Run: pip install numpy")
+`,
+            torch: `# PyTorch Test
+try:
+    import torch
+    
+    print(f"PyTorch version: {torch.__version__}")
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    
+    if torch.cuda.is_available():
+        print(f"CUDA version: {torch.version.cuda}")
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
+        
+    # Simple tensor operation
+    x = torch.rand(3, 3)
+    print("\\nRandom tensor:")
+    print(x)
+except ImportError:
+    print("PyTorch not installed. Run: pip install torch")
+`,
+            train: `# Simple Training Example
+import random
+
+# Simulated training loop
+print("Starting training simulation...")
+
+epochs = 5
+for epoch in range(epochs):
+    loss = 1.0 / (epoch + 1) + random.random() * 0.1
+    acc = 0.5 + (epoch * 0.1) + random.random() * 0.05
+    print(f"Epoch {epoch+1}/{epochs} - Loss: {loss:.4f} - Accuracy: {acc:.2%}")
+
+print("\\nTraining complete!")
+`
+        };
+
+        async function api(endpoint, method = 'GET', body = null) {
+            const options = { method, headers: {} };
+            if (body) {
+                options.headers['Content-Type'] = 'application/json';
+                options.body = JSON.stringify(body);
+            }
+            const resp = await fetch(API_BASE + endpoint, options);
+            return resp.json();
+        }
+
+        async function loadWorkers() {
+            try {
+                const data = await api('/workers');
+                const list = document.getElementById('worker-list');
+                const select = document.getElementById('worker-select');
+                
+                if (!data.workers || data.workers.length === 0) {
+                    list.innerHTML = '<div class="no-workers">No workers available</div>';
+                    return;
+                }
+
+                // Build worker list
+                list.innerHTML = data.workers.map(w => `
+                    <div class="worker-item ${w.online ? '' : 'offline'}" 
+                         onclick="selectWorker('${w.name}')" 
+                         id="worker-${w.name}">
+                        <div class="name">${w.name}</div>
+                        <div class="info">${w.ip || 'No IP'}</div>
+                        <div class="info">${w.cpus ? w.cpus + ' CPU' : ''} ${w.memory ? w.memory + 'GB RAM' : ''} ${w.gpus ? w.gpus + ' GPU' : ''}</div>
+                        <span class="status ${w.online ? 'online' : 'offline'}">${w.online ? 'ONLINE' : 'OFFLINE'}</span>
+                    </div>
+                `).join('');
+
+                // Build select options
+                select.innerHTML = '<option value="">Select worker...</option>' +
+                    data.workers
+                        .filter(w => w.online)
+                        .map(w => `<option value="${w.name}">${w.name} (${w.ip})</option>`)
+                        .join('');
+
+            } catch (err) {
+                console.error('Failed to load workers:', err);
+            }
+        }
+
+        function selectWorker(name) {
+            // Update visual selection
+            document.querySelectorAll('.worker-item').forEach(el => el.classList.remove('selected'));
+            const el = document.getElementById('worker-' + name);
+            if (el) el.classList.add('selected');
+            
+            // Update dropdown
+            document.getElementById('worker-select').value = name;
+            selectedWorker = name;
+            
+            document.getElementById('worker-status').textContent = 'Worker: ' + name;
+            document.getElementById('status-text').textContent = 'Ready';
+        }
+
+        // Sync dropdown to sidebar selection
+        document.getElementById('worker-select').addEventListener('change', function() {
+            if (this.value) {
+                selectWorker(this.value);
+            }
+        });
+
+        function setCommand(cmd) {
+            document.getElementById('command-input').value = cmd;
+        }
+
+        function loadTemplate(name) {
+            if (templates[name]) {
+                document.getElementById('code-editor').value = templates[name];
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const editor = document.getElementById('code-editor');
+            if (tab === 'python') {
+                editor.placeholder = '# Write your Python code here...';
+            } else {
+                editor.placeholder = '#!/bin/bash\n# Write your shell script here...';
+            }
+        }
+
+        async function runCommand() {
+            const worker = document.getElementById('worker-select').value;
+            const command = document.getElementById('command-input').value;
+            
+            if (!worker) {
+                alert('Please select a worker first');
+                return;
+            }
+            if (!command) {
+                alert('Please enter a command');
+                return;
+            }
+            
+            await executeOnWorker(worker, command);
+        }
+
+        async function runPython() {
+            const worker = document.getElementById('worker-select').value;
+            const code = document.getElementById('code-editor').value;
+            
+            if (!worker) {
+                alert('Please select a worker first');
+                return;
+            }
+            if (!code.trim()) {
+                alert('Please enter some code');
+                return;
+            }
+            
+            // Escape the code for shell
+            const escapedCode = code.replace(/'/g, "'\\''");
+            let command;
+            
+            if (currentTab === 'python') {
+                command = `python3 -c '${escapedCode}'`;
+            } else {
+                command = `bash -c '${escapedCode}'`;
+            }
+            
+            await executeOnWorker(worker, command);
+        }
+
+        async function executeOnWorker(worker, command) {
+            const outputBox = document.getElementById('output-box');
+            const statusText = document.getElementById('status-text');
+            const execTime = document.getElementById('exec-time');
+            
+            outputBox.textContent = 'Executing...';
+            outputBox.className = 'output-box running';
+            statusText.textContent = 'Running on ' + worker + '...';
+            
+            const startTime = Date.now();
+            
+            try {
+                const data = await api(`/workers/${worker}/exec`, 'POST', { command });
+                const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                execTime.textContent = `Execution time: ${duration}s`;
+                
+                let output = '';
+                if (data.output) output += data.output;
+                if (data.error) {
+                    if (output) output += '\n';
+                    output += '[STDERR]\n' + data.error;
+                }
+                output += `\n\n[Exit code: ${data.exit_code}]`;
+                
+                outputBox.textContent = output;
+                outputBox.className = 'output-box' + (data.exit_code !== 0 ? ' error' : '');
+                statusText.textContent = data.exit_code === 0 ? 'Completed successfully' : 'Completed with errors';
+                
+            } catch (err) {
+                outputBox.textContent = 'Error: ' + err.message;
+                outputBox.className = 'output-box error';
+                statusText.textContent = 'Error';
+                execTime.textContent = '';
+            }
+        }
+
+        function clearOutput() {
+            document.getElementById('output-box').textContent = 'Ready.';
+            document.getElementById('output-box').className = 'output-box';
+            document.getElementById('exec-time').textContent = '';
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Enter to run Python
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                runPython();
+            }
+            // Shift+Enter to run command
+            if (e.shiftKey && e.key === 'Enter' && document.activeElement.id === 'command-input') {
+                e.preventDefault();
+                runCommand();
+            }
+        });
+
+        // Initial load
+        loadWorkers();
+        
+        // Refresh workers every 30s
+        setInterval(loadWorkers, 30000);
+    </script>
+</body>
+</html>

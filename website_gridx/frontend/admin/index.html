@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid-X Admin - Middleware Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+        }
+        .header {
+            background: #16213e;
+            padding: 15px 20px;
+            border-bottom: 2px solid #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            color: #ff9800;
+            font-size: 20px;
+        }
+        .header h1 span {
+            color: #888;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .nav {
+            display: flex;
+            gap: 10px;
+        }
+        .nav a {
+            color: #00d9ff;
+            text-decoration: none;
+            padding: 6px 12px;
+            background: #0f3460;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .nav a:hover {
+            background: #1a1a2e;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-box .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .stat-box .value.green { color: #00c853; }
+        .stat-box .value.blue { color: #00d9ff; }
+        .stat-box .value.orange { color: #ff9800; }
+        .stat-box .value.red { color: #ff5252; }
+        .stat-box .label {
+            color: #888;
+            font-size: 12px;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+        .section {
+            background: #16213e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .section h2 {
+            color: #ff9800;
+            font-size: 16px;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-primary {
+            background: #00d9ff;
+            color: #000;
+        }
+        .btn-warning {
+            background: #ff9800;
+            color: #000;
+        }
+        .btn-danger {
+            background: #ff5252;
+            color: #fff;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #0f3460;
+        }
+        th {
+            background: #0f3460;
+            color: #ff9800;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        tr:hover {
+            background: rgba(255, 152, 0, 0.05);
+        }
+        .method {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .method.GET { background: #2196f3; color: #fff; }
+        .method.POST { background: #00c853; color: #000; }
+        .method.DELETE { background: #ff5252; color: #fff; }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        .status-badge.success { background: #00c853; color: #000; }
+        .status-badge.failed { background: #ff5252; color: #fff; }
+        .log-box {
+            background: #0a0a14;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #1a1a2e;
+        }
+        .log-entry .time { color: #888; }
+        .log-entry .method { margin: 0 5px; }
+        .log-entry .endpoint { color: #00d9ff; }
+        .log-entry .duration { color: #ff9800; }
+        .log-entry .worker { color: #00c853; }
+        .chart-container {
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            padding: 10px;
+            background: #0a0a14;
+            border-radius: 4px;
+        }
+        .bar {
+            flex: 1;
+            background: #00d9ff;
+            min-width: 10px;
+            transition: height 0.3s;
+        }
+        .bar:hover {
+            background: #ff9800;
+        }
+        .endpoints-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        .endpoint-card {
+            background: #1a1a2e;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 3px solid #00d9ff;
+        }
+        .endpoint-card .path {
+            font-family: monospace;
+            color: #00d9ff;
+            font-size: 12px;
+        }
+        .endpoint-card .count {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            margin-top: 5px;
+        }
+        .config-display {
+            background: #0a0a14;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .refresh-indicator {
+            color: #888;
+            font-size: 12px;
+        }
+        .live-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #00c853;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .worker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .worker-card {
+            background: #1a1a2e;
+            padding: 12px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .worker-card .name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .worker-card .ip {
+            color: #888;
+            font-size: 12px;
+        }
+        .worker-card .requests {
+            font-size: 24px;
+            color: #00d9ff;
+            margin-top: 5px;
+        }
+        .no-data {
+            text-align: center;
+            color: #888;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Grid-X Admin <span>Middleware Monitor</span></h1>
+        <nav class="nav">
+            <a href="/host">Host Dashboard</a>
+            <a href="/onboard">+ Add Worker</a>
+            <a href="/client">Client Interface</a>
+            <a href="/admin">Admin View</a>
+            <a href="/docs" target="_blank">API Docs</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="value blue" id="total-requests">0</div>
+                <div class="label">Total Requests</div>
+            </div>
+            <div class="stat-box">
+                <div class="value green" id="success-count">0</div>
+                <div class="label">Successful</div>
+            </div>
+            <div class="stat-box">
+                <div class="value red" id="failed-count">0</div>
+                <div class="label">Failed</div>
+            </div>
+            <div class="stat-box">
+                <div class="value orange" id="active-workers">0</div>
+                <div class="label">Active Workers</div>
+            </div>
+            <div class="stat-box">
+                <div class="value blue" id="middleware-status">-</div>
+                <div class="label">Middleware</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="section">
+                <div class="section-header">
+                    <h2>Request Logs</h2>
+                    <div>
+                        <span class="refresh-indicator"><span class="live-dot"></span>Live</span>
+                        <button class="btn btn-primary" onclick="loadLogs()">Refresh</button>
+                        <button class="btn btn-danger" onclick="clearDisplay()">Clear</button>
+                    </div>
+                </div>
+                <div class="log-box" id="log-box">
+                    <div class="no-data">No requests logged yet</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>Requests by Endpoint</h2>
+                </div>
+                <div class="endpoints-list" id="endpoints-list">
+                    <div class="no-data">No data</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="section">
+                <div class="section-header">
+                    <h2>Requests by Worker</h2>
+                </div>
+                <div class="worker-grid" id="worker-grid">
+                    <div class="no-data">No worker requests yet</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>Request Activity</h2>
+                </div>
+                <div class="chart-container" id="activity-chart">
+                    <!-- Dynamic bars -->
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="section">
+                <div class="section-header">
+                    <h2>Hub Configuration</h2>
+                    <button class="btn btn-primary" onclick="loadConfig()">Reload</button>
+                </div>
+                <div class="config-display" id="config-display">Loading...</div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>Recent Executions</h2>
+                </div>
+                <table id="exec-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Worker</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="4" class="no-data">No executions</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Try middleware first, fall back to API
+        const MIDDLEWARE_URL = window.location.protocol + '//' + window.location.hostname + ':7575';
+        const API_BASE = '/api';
+        
+        let useMiddleware = false;
+        let activityData = new Array(30).fill(0);
+
+        // Check if middleware is available
+        async function checkMiddleware() {
+            try {
+                const resp = await fetch(MIDDLEWARE_URL + '/middleware/health', { timeout: 2000 });
+                if (resp.ok) {
+                    useMiddleware = true;
+                    document.getElementById('middleware-status').textContent = 'ONLINE';
+                    document.getElementById('middleware-status').classList.add('green');
+                    return true;
+                }
+            } catch (e) {
+                // Middleware not available
+            }
+            useMiddleware = false;
+            document.getElementById('middleware-status').textContent = 'OFFLINE';
+            document.getElementById('middleware-status').classList.add('red');
+            return false;
+        }
+
+        async function loadStats() {
+            if (!useMiddleware) {
+                // Use API directly for basic stats
+                try {
+                    const workers = await fetch(API_BASE + '/workers/ping').then(r => r.json());
+                    document.getElementById('active-workers').textContent = workers.online || 0;
+                } catch (e) {}
+                return;
+            }
+
+            try {
+                const stats = await fetch(MIDDLEWARE_URL + '/middleware/stats').then(r => r.json());
+                
+                document.getElementById('total-requests').textContent = stats.total || 0;
+                document.getElementById('success-count').textContent = stats.success || 0;
+                document.getElementById('failed-count').textContent = stats.failed || 0;
+                
+                // Update endpoints list
+                const endpointsList = document.getElementById('endpoints-list');
+                const endpoints = stats.by_endpoint || {};
+                
+                if (Object.keys(endpoints).length > 0) {
+                    endpointsList.innerHTML = Object.entries(endpoints)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 8)
+                        .map(([path, count]) => `
+                            <div class="endpoint-card">
+                                <div class="path">${path}</div>
+                                <div class="count">${count}</div>
+                            </div>
+                        `).join('');
+                }
+                
+                // Update worker grid
+                const workerGrid = document.getElementById('worker-grid');
+                const workers = stats.by_worker || {};
+                
+                if (Object.keys(workers).length > 0) {
+                    workerGrid.innerHTML = Object.entries(workers)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([name, count]) => `
+                            <div class="worker-card">
+                                <div class="name">${name}</div>
+                                <div class="requests">${count}</div>
+                            </div>
+                        `).join('');
+                    
+                    document.getElementById('active-workers').textContent = Object.keys(workers).length;
+                }
+                
+                // Update activity chart
+                activityData.push(stats.total || 0);
+                activityData.shift();
+                updateActivityChart();
+                
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        async function loadLogs() {
+            if (!useMiddleware) {
+                document.getElementById('log-box').innerHTML = '<div class="no-data">Middleware not available. Start middleware on port 7575.</div>';
+                return;
+            }
+
+            try {
+                const data = await fetch(MIDDLEWARE_URL + '/middleware/logs').then(r => r.json());
+                const logs = data.logs || [];
+                
+                if (logs.length === 0) {
+                    document.getElementById('log-box').innerHTML = '<div class="no-data">No requests logged yet</div>';
+                    return;
+                }
+                
+                document.getElementById('log-box').innerHTML = logs
+                    .slice(-50)
+                    .reverse()
+                    .map(log => `
+                        <div class="log-entry">
+                            <span class="time">${log.timestamp || '-'}</span>
+                            <span class="method ${log.method || 'GET'}">${log.method || 'GET'}</span>
+                            <span class="endpoint">${log.endpoint || '-'}</span>
+                            ${log.worker ? `<span class="worker">[${log.worker}]</span>` : ''}
+                            <span class="duration">${log.duration_ms || 0}ms</span>
+                            <span class="status-badge ${log.success ? 'success' : 'failed'}">${log.success ? 'OK' : 'FAIL'}</span>
+                        </div>
+                    `).join('');
+                
+                // Update exec table with POST /exec requests
+                const execLogs = logs.filter(l => l.endpoint && l.endpoint.includes('exec'));
+                const execTable = document.querySelector('#exec-table tbody');
+                
+                if (execLogs.length > 0) {
+                    execTable.innerHTML = execLogs
+                        .slice(-10)
+                        .reverse()
+                        .map(log => `
+                            <tr>
+                                <td>${log.timestamp || '-'}</td>
+                                <td>${log.worker || '-'}</td>
+                                <td>${log.duration_ms || 0}ms</td>
+                                <td><span class="status-badge ${log.success ? 'success' : 'failed'}">${log.success ? 'OK' : 'FAIL'}</span></td>
+                            </tr>
+                        `).join('');
+                }
+                
+            } catch (e) {
+                console.error('Failed to load logs:', e);
+            }
+        }
+
+        async function loadConfig() {
+            if (!useMiddleware) {
+                // Use API directly
+                try {
+                    const status = await fetch(API_BASE + '/status').then(r => r.json());
+                    document.getElementById('config-display').textContent = JSON.stringify(status, null, 2);
+                } catch (e) {
+                    document.getElementById('config-display').textContent = 'Failed to load config';
+                }
+                return;
+            }
+
+            try {
+                const config = await fetch(MIDDLEWARE_URL + '/middleware/config').then(r => r.json());
+                document.getElementById('config-display').textContent = JSON.stringify(config, null, 2);
+            } catch (e) {
+                document.getElementById('config-display').textContent = 'Failed to load config';
+            }
+        }
+
+        function updateActivityChart() {
+            const chart = document.getElementById('activity-chart');
+            const max = Math.max(...activityData, 1);
+            
+            let prevValue = activityData[0];
+            chart.innerHTML = activityData.map((val, i) => {
+                const delta = val - prevValue;
+                prevValue = val;
+                const height = Math.max((delta / max) * 100, 2);
+                return `<div class="bar" style="height: ${height}%" title="${delta} requests"></div>`;
+            }).join('');
+        }
+
+        function clearDisplay() {
+            document.getElementById('log-box').innerHTML = '<div class="no-data">Cleared</div>';
+            activityData = new Array(30).fill(0);
+            updateActivityChart();
+        }
+
+        async function init() {
+            await checkMiddleware();
+            await loadStats();
+            await loadLogs();
+            await loadConfig();
+        }
+
+        // Initial load
+        init();
+
+        // Auto-refresh every 5 seconds
+        setInterval(async () => {
+            await loadStats();
+            await loadLogs();
+        }, 5000);
+
+        // Check middleware status every 30 seconds
+        setInterval(checkMiddleware, 30000);
+    </script>
+</body>
+</html>
