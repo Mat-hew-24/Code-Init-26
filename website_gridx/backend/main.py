@@ -7,15 +7,16 @@ and exposes it via a REST API.
 
 import sys
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+import time
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from routers import workers, jobs, exec, onboarding
+from routers import workers, jobs, exec, onboarding, middleware
 from services.gridx_wrapper import get_wrapper
 
 app = FastAPI(
@@ -33,11 +34,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Middleware to log all requests for admin monitoring"""
+    start_time = time.time()
+    
+    # Call the actual route handler
+    response = await call_next(request)
+    
+    # Calculate duration
+    duration_ms = (time.time() - start_time) * 1000
+    
+    # Extract worker from request if available (for exec endpoints)
+    worker = None
+    if hasattr(request.state, 'worker'):
+        worker = request.state.worker
+    elif 'worker' in str(request.url.query):
+        # Try to extract worker from query params
+        query_params = dict(request.query_params)
+        worker = query_params.get('worker')
+    
+    # Log the request using middleware router function
+    try:
+        from routers.middleware import log_request
+        log_request(
+            endpoint=str(request.url.path),
+            method=request.method,
+            worker=worker,
+            duration_ms=int(duration_ms),
+            success=(200 <= response.status_code < 400)
+        )
+    except Exception as e:
+        # Don't let logging errors break the request
+        print(f"Logging error: {e}")
+    
+    return response
+
 # Include routers
 app.include_router(workers.router, prefix="/api")
 app.include_router(jobs.router, prefix="/api")
 app.include_router(exec.router, prefix="/api")
 app.include_router(onboarding.router, prefix="/api")
+app.include_router(middleware.router, prefix="/api")
 
 
 # ==================== Hub Status Endpoints ====================
@@ -46,8 +85,18 @@ app.include_router(onboarding.router, prefix="/api")
 @app.get("/api/status")
 def get_hub_status():
     """Get overall hub status"""
-    wrapper = get_wrapper()
-    return wrapper.get_hub_status()
+    try:
+        wrapper = get_wrapper()
+        return wrapper.get_hub_status()
+    except Exception as e:
+        # Return fallback status if hub wrapper fails
+        return {
+            "status": "partial",
+            "message": "Hub status unavailable",
+            "error": str(e),
+            "api": "online",
+            "timestamp": time.time()
+        }
 
 
 @app.get("/api/services")

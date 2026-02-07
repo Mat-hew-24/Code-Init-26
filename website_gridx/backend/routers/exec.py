@@ -2,7 +2,7 @@
 Exec Router - API endpoints for remote command execution
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from typing import Optional
 from pydantic import BaseModel
 
@@ -25,11 +25,14 @@ class BatchExecRequest(BaseModel):
 
 
 @router.post("")
-def execute_command(request: ExecRequest):
+def execute_command(request_data: ExecRequest, request: Request):
     """Execute a command on a specific worker"""
+    # Set worker in request state for middleware logging
+    request.state.worker = request_data.worker
+    
     wrapper = get_wrapper()
-    timeout = request.timeout if request.timeout is not None else 30
-    result = wrapper.exec_on_worker(request.worker, request.command, timeout)
+    timeout = request_data.timeout if request_data.timeout is not None else 30
+    result = wrapper.exec_on_worker(request_data.worker, request_data.command, timeout)
     return result
 
 

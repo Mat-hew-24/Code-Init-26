@@ -596,28 +596,28 @@
     </div>
 
     <script>
-      // Try middleware first, fall back to API
-      const MIDDLEWARE_URL =
-        window.location.protocol + "//" + window.location.hostname + ":7575";
+      // Use API middleware endpoints
+      const MIDDLEWARE_URL = "/api/middleware";
       const API_BASE = "/api";
 
-      let useMiddleware = false;
+      let useMiddleware = true;
       let activityData = new Array(30).fill(0);
 
       // Check if middleware is available
       async function checkMiddleware() {
         try {
-          const resp = await fetch(MIDDLEWARE_URL + "/middleware/health", {
+          const resp = await fetch(MIDDLEWARE_URL + "/health", {
             timeout: 2000,
           });
           if (resp.ok) {
+            const data = await resp.json();
             useMiddleware = true;
             document.getElementById("middleware-status").textContent = "ONLINE";
             document.getElementById("middleware-status").classList.add("green");
             return true;
           }
         } catch (e) {
-          // Middleware not available
+          // Fallback to API endpoints
         }
         useMiddleware = false;
         document.getElementById("middleware-status").textContent = "OFFLINE";
@@ -626,144 +626,171 @@
       }
 
       async function loadStats() {
-        if (!useMiddleware) {
-          // Use API directly for basic stats
+        if (useMiddleware) {
           try {
-            const workers = await fetch(API_BASE + "/workers/ping").then((r) =>
-              r.json(),
+            const stats = await fetch(MIDDLEWARE_URL + "/stats").then(
+              (r) => r.json(),
             );
-            document.getElementById("active-workers").textContent =
-              workers.online || 0;
-          } catch (e) {}
-          return;
-        }
 
-        try {
-          const stats = await fetch(MIDDLEWARE_URL + "/middleware/stats").then(
-            (r) => r.json(),
-          );
+            document.getElementById("total-requests").textContent =
+              stats.total || 0;
+            document.getElementById("success-count").textContent =
+              stats.success || 0;
+            document.getElementById("failed-count").textContent =
+              stats.failed || 0;
 
-          document.getElementById("total-requests").textContent =
-            stats.total || 0;
-          document.getElementById("success-count").textContent =
-            stats.success || 0;
-          document.getElementById("failed-count").textContent =
-            stats.failed || 0;
+            // Update endpoints list
+            const endpointsList = document.getElementById("endpoints-list");
+            const endpoints = stats.by_endpoint || {};
 
-          // Update endpoints list
-          const endpointsList = document.getElementById("endpoints-list");
-          const endpoints = stats.by_endpoint || {};
-
-          if (Object.keys(endpoints).length > 0) {
-            endpointsList.innerHTML = Object.entries(endpoints)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 8)
-              .map(
-                ([path, count]) => `
+            if (Object.keys(endpoints).length > 0) {
+              endpointsList.innerHTML = Object.entries(endpoints)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8)
+                .map(
+                  ([path, count]) => `
                             <div class="endpoint-card">
                                 <div class="path">${path}</div>
                                 <div class="count">${count}</div>
                             </div>
                         `,
-              )
-              .join("");
-          }
+                )
+                .join("");
+            }
 
-          // Update worker grid
-          const workerGrid = document.getElementById("worker-grid");
-          const workers = stats.by_worker || {};
+            // Update worker grid
+            const workerGrid = document.getElementById("worker-grid");
+            const workers = stats.by_worker || {};
 
-          if (Object.keys(workers).length > 0) {
-            workerGrid.innerHTML = Object.entries(workers)
-              .sort((a, b) => b[1] - a[1])
-              .map(
-                ([name, count]) => `
+            if (Object.keys(workers).length > 0) {
+              workerGrid.innerHTML = Object.entries(workers)
+                .sort((a, b) => b[1] - a[1])
+                .map(
+                  ([name, count]) => `
                             <div class="worker-card">
                                 <div class="name">${name}</div>
                                 <div class="requests">${count}</div>
                             </div>
                         `,
-              )
-              .join("");
+                )
+                .join("");
 
-            document.getElementById("active-workers").textContent =
-              Object.keys(workers).length;
+              document.getElementById("active-workers").textContent =
+                Object.keys(workers).length;
+            }
+
+            // Update activity chart
+            activityData.push(stats.total || 0);
+            activityData.shift();
+            updateActivityChart();
+          } catch (e) {
+            console.error("Failed to load middleware stats:", e);
+            // Fallback to API stats
+            await loadApiStats();
           }
+        } else {
+          await loadApiStats();
+        }
+      }
 
-          // Update activity chart
-          activityData.push(stats.total || 0);
-          activityData.shift();
-          updateActivityChart();
+      async function loadApiStats() {
+        // Fallback to basic API stats
+        try {
+          const workers = await fetch(API_BASE + "/workers/ping").then((r) =>
+            r.json(),
+          );
+          document.getElementById("active-workers").textContent =
+            workers.online || 0;
+
+          const jobs = await fetch(API_BASE + "/jobs").then((r) => r.json());
+          const runningJobs = jobs.jobs ? jobs.jobs.filter(j => j.running).length : 0;
+
+          // Set some basic stats
+          document.getElementById("total-requests").textContent = "↻";
+          document.getElementById("success-count").textContent = "↻";
+          document.getElementById("failed-count").textContent = "↻";
         } catch (e) {
-          console.error("Failed to load stats:", e);
+          console.error("Failed to load API stats:", e);
         }
       }
 
       async function loadLogs() {
-        if (!useMiddleware) {
-          document.getElementById("log-box").innerHTML =
-            '<div class="no-data">Middleware not available. Start middleware on port 7575.</div>';
-          return;
-        }
+        if (useMiddleware) {
+          try {
+            const data = await fetch(MIDDLEWARE_URL + "/logs").then(
+              (r) => r.json(),
+            );
+            const logs = data.logs || [];
 
-        try {
-          const data = await fetch(MIDDLEWARE_URL + "/middleware/logs").then(
-            (r) => r.json(),
-          );
-          const logs = data.logs || [];
+            if (logs.length === 0) {
+              document.getElementById("log-box").innerHTML =
+                '<div class="no-data">No requests logged yet</div>';
+              return;
+            }
 
-          if (logs.length === 0) {
-            document.getElementById("log-box").innerHTML =
-              '<div class="no-data">No requests logged yet</div>';
-            return;
-          }
-
-          document.getElementById("log-box").innerHTML = logs
-            .slice(-50)
-            .reverse()
-            .map(
-              (log) => `
+            document.getElementById("log-box").innerHTML = logs
+              .slice(-50)
+              .reverse()
+              .map(
+                (log) => `
                         <div class="log-entry">
                             <span class="time">${log.timestamp || "-"}</span>
                             <span class="method ${log.method || "GET"}">${log.method || "GET"}</span>
                             <span class="endpoint">${log.endpoint || "-"}</span>
                             ${log.worker ? `<span class="worker">[${log.worker}]</span>` : ""}
                             <span class="duration">${log.duration_ms || 0}ms</span>
-                            <span class="status-badge ${log.success ? "success" : "failed"}">${log.success ? "OK" : "FAIL"}</span>
+                            <span class="status-badge ${log.success ? "success" : "failed"}">${log.success ? "✓ OK" : "✗ FAIL"}</span>
                         </div>
                     `,
-            )
-            .join("");
+              )
+              .join("");
 
-          // Update exec table with POST /exec requests
-          const execLogs = logs.filter(
-            (l) => l.endpoint && l.endpoint.includes("exec"),
-          );
-          const execTable = document.querySelector("#exec-table tbody");
+            // Update exec table with POST /exec requests
+            const execLogs = logs.filter(
+              (l) => l.endpoint && l.endpoint.includes("exec"),
+            );
+            const execTable = document.querySelector("#exec-table tbody");
 
-          if (execLogs.length > 0) {
-            execTable.innerHTML = execLogs
-              .slice(-10)
-              .reverse()
-              .map(
-                (log) => `
+            if (execLogs.length > 0) {
+              execTable.innerHTML = execLogs
+                .slice(-10)
+                .reverse()
+                .map(
+                  (log) => `
                             <tr>
                                 <td>${log.timestamp || "-"}</td>
                                 <td>${log.worker || "-"}</td>
                                 <td>${log.duration_ms || 0}ms</td>
-                                <td><span class="status-badge ${log.success ? "success" : "failed"}">${log.success ? "OK" : "FAIL"}</span></td>
+                                <td><span class="status-badge ${log.success ? "success" : "failed"}">${log.success ? "✓ OK" : "✗ FAIL"}</span></td>
                             </tr>
                         `,
-              )
-              .join("");
+                )
+                .join("");
+            }
+          } catch (e) {
+            console.error("Failed to load logs:", e);
+            document.getElementById("log-box").innerHTML =
+              '<div class="no-data">Failed to load logs</div>';
           }
-        } catch (e) {
-          console.error("Failed to load logs:", e);
+        } else {
+          document.getElementById("log-box").innerHTML =
+            '<div class="no-data">Middleware not available. Enable middleware for request logging.</div>';
         }
       }
 
       async function loadConfig() {
-        if (!useMiddleware) {
+        if (useMiddleware) {
+          try {
+            const config = await fetch(
+              MIDDLEWARE_URL + "/config",
+            ).then((r) => r.json());
+            document.getElementById("config-display").textContent =
+              JSON.stringify(config, null, 2);
+          } catch (e) {
+            document.getElementById("config-display").textContent =
+              "Failed to load middleware config";
+          }
+        } else {
           // Use API directly
           try {
             const status = await fetch(API_BASE + "/status").then((r) =>
@@ -775,18 +802,6 @@
             document.getElementById("config-display").textContent =
               "Failed to load config";
           }
-          return;
-        }
-
-        try {
-          const config = await fetch(
-            MIDDLEWARE_URL + "/middleware/config",
-          ).then((r) => r.json());
-          document.getElementById("config-display").textContent =
-            JSON.stringify(config, null, 2);
-        } catch (e) {
-          document.getElementById("config-display").textContent =
-            "Failed to load config";
         }
       }
 
@@ -806,10 +821,30 @@
       }
 
       function clearDisplay() {
-        document.getElementById("log-box").innerHTML =
-          '<div class="no-data">Cleared</div>';
-        activityData = new Array(30).fill(0);
-        updateActivityChart();
+        if (useMiddleware) {
+          fetch(MIDDLEWARE_URL + "/logs", { method: "DELETE" })
+            .then(() => {
+              document.getElementById("log-box").innerHTML =
+                '<div class="no-data">Logs cleared</div>';
+              activityData = new Array(30).fill(0);
+              updateActivityChart();
+              
+              // Reset stats
+              document.getElementById("total-requests").textContent = "0";
+              document.getElementById("success-count").textContent = "0";
+              document.getElementById("failed-count").textContent = "0";
+              document.getElementById("endpoints-list").innerHTML =
+                '<div class="no-data">No data</div>';
+              document.getElementById("worker-grid").innerHTML =
+                '<div class="no-data">No data</div>';
+            })
+            .catch((e) => console.error("Failed to clear logs:", e));
+        } else {
+          document.getElementById("log-box").innerHTML =
+            '<div class="no-data">Cleared</div>';
+          activityData = new Array(30).fill(0);
+          updateActivityChart();
+        }
       }
 
       async function init() {
