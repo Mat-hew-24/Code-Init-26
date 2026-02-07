@@ -4,7 +4,6 @@ Grid-X Hub - Main server that manages WireGuard VPN + Docker Swarm
 
 Run this on your main PC/server.
 """
-
 import subprocess
 import json
 import os

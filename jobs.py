@@ -4,7 +4,6 @@ Grid-X Jobs - Submit and manage compute jobs on the swarm
 
 Run this from the hub or any machine connected to the VPN.
 """
-
 import subprocess
 import json
 import os

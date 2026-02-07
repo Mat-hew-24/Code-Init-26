@@ -135,6 +135,54 @@ class GridXWrapper:
             pass
         return None
 
+    def get_best_worker(self) -> Optional[str]:
+        """Get the best available worker for task execution"""
+        workers = self.get_workers()
+        if not workers:
+            return None
+
+        # Ping all workers to find online ones
+        online_workers = []
+        for name in workers:
+            ping_result = self.ping_worker(name, timeout=2)
+            if ping_result.get("online"):
+                # Get detailed status for load assessment
+                status = self.get_worker_status(name, timeout=3)
+                if status:
+                    online_workers.append(
+                        {
+                            "name": name,
+                            "status": status,
+                            "cpu_percent": status.get("cpu_percent", 0),
+                            "memory_percent": status.get("memory_percent", 0),
+                            "gpus": workers[name].get("gpus", 0),
+                        }
+                    )
+
+        if not online_workers:
+            return None
+
+        # Sort by load (lower CPU/memory usage = better)
+        # Prefer workers with GPUs for GPU-intensive tasks
+        online_workers.sort(
+            key=lambda w: (
+                w["cpu_percent"] + w["memory_percent"],  # Total load
+                -w["gpus"],  # Prefer more GPUs (negative for descending)
+            )
+        )
+
+        return online_workers[0]["name"]
+
+    def get_online_workers(self) -> List[str]:
+        """Get list of all online worker names"""
+        workers = self.get_workers()
+        online = []
+        for name in workers:
+            ping_result = self.ping_worker(name, timeout=2)
+            if ping_result.get("online"):
+                online.append(name)
+        return online
+
     def exec_on_worker(
         self, name: str, command: str, timeout: int = 30
     ) -> Dict[str, Any]:
@@ -174,6 +222,16 @@ class GridXWrapper:
             }
         except Exception as e:
             return {"success": False, "error": str(e), "worker": name}
+
+    def exec_on_best_worker(self, command: str, timeout: int = 30) -> Dict[str, Any]:
+        """Execute a command on the best available worker"""
+        best_worker = self.get_best_worker()
+        if not best_worker:
+            return {"success": False, "error": "No workers available", "worker": None}
+
+        result = self.exec_on_worker(best_worker, command, timeout)
+        result["auto_selected"] = True
+        return result
 
     # ==================== JOBS ====================
 

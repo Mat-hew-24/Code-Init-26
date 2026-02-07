@@ -13,7 +13,7 @@ router = APIRouter(prefix="/exec", tags=["exec"])
 
 
 class ExecRequest(BaseModel):
-    worker: str
+    worker: Optional[str] = None  # If None, auto-select best worker
     command: str
     timeout: Optional[int] = 30
 
@@ -24,15 +24,32 @@ class BatchExecRequest(BaseModel):
     timeout: Optional[int] = 30
 
 
+@router.post("/auto")
+def auto_execute(command: str, timeout: Optional[int] = 30):
+    """Execute a command on the best available worker (simplified endpoint)"""
+    wrapper = get_wrapper()
+    timeout = timeout if timeout is not None else 30
+    result = wrapper.exec_on_best_worker(command, timeout)
+    return result
+
+
 @router.post("")
 def execute_command(request_data: ExecRequest, request: Request):
-    """Execute a command on a specific worker"""
-    # Set worker in request state for middleware logging
-    request.state.worker = request_data.worker
-    
+    """Execute a command on a specific worker or auto-select best worker"""
     wrapper = get_wrapper()
     timeout = request_data.timeout if request_data.timeout is not None else 30
-    result = wrapper.exec_on_worker(request_data.worker, request_data.command, timeout)
+
+    if request_data.worker:
+        # Execute on specified worker
+        request.state.worker = request_data.worker
+        result = wrapper.exec_on_worker(
+            request_data.worker, request_data.command, timeout
+        )
+    else:
+        # Auto-select best worker
+        result = wrapper.exec_on_best_worker(request_data.command, timeout)
+        request.state.worker = result.get("worker")
+
     return result
 
 
@@ -60,3 +77,32 @@ def batch_execute(request: BatchExecRequest):
     success_count = sum(1 for r in results.values() if r.get("success"))
 
     return {"results": results, "success_count": success_count, "total": len(workers)}
+
+
+@router.get("/workers/best")
+def get_best_worker():
+    """Get the best available worker for task execution"""
+    wrapper = get_wrapper()
+    best_worker = wrapper.get_best_worker()
+
+    if not best_worker:
+        raise HTTPException(status_code=503, detail="No workers available")
+
+    worker_info = wrapper.get_worker(best_worker)
+    status = wrapper.get_worker_status(best_worker)
+
+    return {
+        "name": best_worker,
+        "info": worker_info,
+        "status": status,
+        "reason": "Selected based on lowest load and resource availability",
+    }
+
+
+@router.get("/workers/online")
+def get_online_workers():
+    """Get all online workers"""
+    wrapper = get_wrapper()
+    online_workers = wrapper.get_online_workers()
+
+    return {"workers": online_workers, "count": len(online_workers)}
