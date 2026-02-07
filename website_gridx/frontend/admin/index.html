@@ -148,7 +148,7 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
         font-weight: 600;
-      }      
+      }
       .stat-box .sublabel {
         color: var(--text-secondary);
         font-size: 10px;
@@ -691,7 +691,7 @@
               document.getElementById("active-workers").textContent =
                 Object.keys(workers).length;
             }
-            
+
             // Update backend servers count
             document.getElementById("backend-servers").textContent =
               stats.backend_servers || 1;
@@ -723,7 +723,8 @@
 
           // Check multiple backend servers
           const backendServers = await checkBackendServers();
-          document.getElementById("backend-servers").textContent = backendServers;
+          document.getElementById("backend-servers").textContent =
+            backendServers;
 
           const jobs = await fetch(API_BASE + "/jobs").then((r) => r.json());
           const runningJobs = jobs.jobs
@@ -738,18 +739,21 @@
           console.error("Failed to load API stats:", e);
         }
       }
-      
+
       async function checkBackendServers() {
         // Check common ports for backend servers
         const ports = [8000, 8001, 8002, 8003, 8004, 8005];
         let onlineCount = 0;
-        
+
         const promises = ports.map(async (port) => {
           try {
-            const response = await fetch(`http://localhost:${port}/api/middleware/health`, {
-              method: 'GET',
-              timeout: 2000
-            });
+            const response = await fetch(
+              `http://localhost:${port}/api/middleware/health`,
+              {
+                method: "GET",
+                timeout: 2000,
+              },
+            );
             if (response.ok) {
               onlineCount++;
             }
@@ -757,7 +761,7 @@
             // Server not responding on this port
           }
         });
-        
+
         await Promise.all(promises);
         return onlineCount;
       }
