@@ -554,7 +554,7 @@
         </div>
       </div>
 
-      <div class="grid-2">
+      <!-- <div class="grid-2">
         <div class="section">
           <div class="section-header">
             <h2>Requests by Worker</h2>
@@ -569,10 +569,9 @@
             <h2>Request Activity</h2>
           </div>
           <div class="chart-container" id="activity-chart">
-            <!-- Dynamic bars -->
           </div>
         </div>
-      </div>
+      </div> -->
 
       <div class="grid-2">
         <div class="section">
@@ -859,13 +858,17 @@
 
       function updateActivityChart() {
         const chart = document.getElementById("activity-chart");
-        const max = Math.max(...activityData, 1);
 
-        let prevValue = activityData[0];
-        chart.innerHTML = activityData
-          .map((val, i) => {
-            const delta = val - prevValue;
-            prevValue = val;
+        // Calculate deltas between consecutive values
+        const deltas = activityData.map((val, i) => {
+          if (i === 0) return 0; // First element has no previous value
+          return Math.max(val - activityData[i - 1], 0);
+        });
+
+        const max = Math.max(...deltas, 1);
+
+        chart.innerHTML = deltas
+          .map((delta) => {
             const height = Math.max((delta / max) * 100, 2);
             return `<div class="bar" style="height: ${height}%" title="${delta} requests"></div>`;
           })
