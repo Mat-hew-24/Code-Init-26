@@ -10,278 +10,455 @@
             padding: 0;
             box-sizing: border-box;
         }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border-color: #334155;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             min-height: 100vh;
         }
+
         .header {
-            background: #16213e;
-            padding: 15px 20px;
-            border-bottom: 2px solid #0f3460;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, #1a2332 100%);
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
         }
+
         .header h1 {
-            color: #00d9ff;
-            font-size: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 24px;
+            font-weight: 700;
         }
+
         .nav {
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
+
         .nav a {
-            color: #00d9ff;
+            color: var(--text-secondary);
             text-decoration: none;
-            padding: 6px 12px;
-            background: #0f3460;
-            border-radius: 4px;
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
             font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
         }
+
         .nav a:hover {
-            background: #1a1a2e;
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
         }
+
         .main-container {
             display: flex;
-            height: calc(100vh - 56px);
+            height: calc(100vh - 65px);
         }
+
         .sidebar {
-            width: 280px;
-            background: #16213e;
-            border-right: 1px solid #0f3460;
-            padding: 15px;
+            width: 300px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
             overflow-y: auto;
         }
+
         .sidebar h2 {
-            color: #00d9ff;
-            font-size: 14px;
-            margin-bottom: 10px;
+            color: var(--primary);
+            font-size: 12px;
+            margin-bottom: 12px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
+            font-weight: 700;
         }
+
         .worker-list {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
+
         .worker-item {
-            padding: 10px;
-            background: #1a1a2e;
-            border-radius: 4px;
-            margin-bottom: 8px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            margin-bottom: 10px;
             cursor: pointer;
             border: 2px solid transparent;
+            transition: all 0.3s ease;
         }
+
         .worker-item:hover {
-            border-color: #0f3460;
+            border-color: var(--primary);
+            background: #3f3f5e;
         }
+
         .worker-item.selected {
-            border-color: #00d9ff;
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
         }
+
         .worker-item .name {
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 4px;
+            color: var(--text-primary);
         }
+
         .worker-item .info {
             font-size: 12px;
-            color: #888;
+            color: var(--text-secondary);
+            margin: 2px 0;
         }
+
         .worker-item .status {
             display: inline-block;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
-            font-weight: bold;
-            margin-top: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+
         .worker-item .status.online {
-            background: #00c853;
-            color: #000;
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
         }
+
         .worker-item .status.offline {
-            background: #ff5252;
-            color: #fff;
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
         }
+
         .workspace {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 15px;
+            padding: 20px;
         }
+
         .editor-section {
             flex: 1;
             display: flex;
             flex-direction: column;
-            margin-bottom: 15px;
+            margin-bottom: 16px;
         }
+
         .editor-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
+
         .editor-header h3 {
-            color: #00d9ff;
+            color: var(--primary);
             font-size: 14px;
+            font-weight: 600;
         }
+
         .editor-tabs {
             display: flex;
-            gap: 5px;
+            gap: 4px;
         }
+
         .editor-tab {
-            padding: 5px 12px;
-            background: #0f3460;
-            border: none;
-            color: #888;
-            border-radius: 4px 4px 0 0;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 6px 6px 0 0;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
+
         .editor-tab.active {
-            background: #1a1a2e;
-            color: #00d9ff;
+            background: transparent;
+            color: var(--primary);
+            border-color: var(--primary);
+            border-bottom: 2px solid var(--primary);
         }
+
         .code-editor {
             flex: 1;
             width: 100%;
-            background: #0a0a14;
-            border: 1px solid #0f3460;
-            border-radius: 4px;
-            padding: 15px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 14px;
-            color: #fff;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: var(--text-primary);
             resize: none;
-            line-height: 1.5;
+            line-height: 1.6;
+            transition: all 0.3s ease;
         }
+
         .code-editor:focus {
             outline: none;
-            border-color: #00d9ff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
+
         .action-bar {
             display: flex;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
         }
+
         .btn {
-            padding: 8px 16px;
+            padding: 10px 18px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 13px;
-            font-weight: bold;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
         }
+
         .btn-run {
-            background: #00c853;
-            color: #000;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
-        .btn-run:hover {
-            background: #00e676;
+
+        .btn-run:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
         }
+
         .btn-clear {
-            background: #ff5252;
-            color: #fff;
+            background: var(--bg-tertiary);
+            color: var(--error);
+            border: 1px solid var(--error);
         }
-        .btn-upload {
-            background: #2196f3;
-            color: #fff;
+
+        .btn-clear:hover {
+            background: var(--error);
+            color: white;
         }
-        .btn-save {
-            background: #ff9800;
-            color: #000;
-        }
+
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none !important;
         }
+
         .output-section {
-            height: 250px;
+            height: 280px;
             display: flex;
             flex-direction: column;
         }
+
         .output-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
+
         .output-header h3 {
-            color: #00d9ff;
+            color: var(--primary);
             font-size: 14px;
+            font-weight: 600;
         }
+
         .output-box {
             flex: 1;
-            background: #0a0a14;
-            border: 1px solid #0f3460;
-            border-radius: 4px;
-            padding: 15px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 13px;
-            color: #0f0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            color: #6ee7b7;
             overflow-y: auto;
             white-space: pre-wrap;
+            word-wrap: break-word;
         }
+
         .output-box.error {
-            color: #ff5252;
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, 0.3);
         }
+
         .output-box.running {
-            color: #ffeb3b;
+            color: #fcd34d;
+            border-color: rgba(245, 158, 11, 0.3);
         }
+
         .worker-select {
-            padding: 8px;
-            background: #1a1a2e;
-            border: 1px solid #0f3460;
-            color: #fff;
-            border-radius: 4px;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
             font-size: 13px;
-            min-width: 150px;
+            min-width: 180px;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
-        .file-input {
-            display: none;
+
+        .worker-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
+
         .command-input {
             flex: 1;
-            padding: 8px 12px;
-            background: #1a1a2e;
-            border: 1px solid #0f3460;
-            color: #fff;
-            border-radius: 4px;
-            font-family: monospace;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            transition: all 0.3s ease;
         }
+
         .command-input:focus {
             outline: none;
-            border-color: #00d9ff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
+
         .quick-commands {
-            margin-top: 10px;
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
         }
+
         .quick-commands button {
-            padding: 4px 8px;
-            margin-right: 5px;
-            margin-bottom: 5px;
-            background: #0f3460;
-            border: none;
-            color: #888;
-            border-radius: 3px;
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 4px;
             cursor: pointer;
             font-size: 11px;
+            font-weight: 500;
+            transition: all 0.3s ease;
         }
+
         .quick-commands button:hover {
-            background: #1a1a2e;
-            color: #00d9ff;
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
         }
+
         .status-bar {
             display: flex;
             justify-content: space-between;
-            padding: 8px 15px;
-            background: #0f3460;
+            align-items: center;
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
             font-size: 12px;
-            color: #888;
+            color: var(--text-secondary);
         }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.ready {
+            background: #10b981;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
         .no-workers {
             text-align: center;
-            padding: 30px;
-            color: #888;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--bg-tertiary);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--bg-tertiary) 25%, #3f3f5e 50%, var(--bg-tertiary) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 6px;
+            height: 16px;
+            margin: 8px 0;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
@@ -297,13 +474,15 @@
     </div>
 
     <div class="main-container">
-        <div class="sidebar">
+        <div class="sidebar scrollbar-hide">
             <h2>Available Workers</h2>
             <div class="worker-list" id="worker-list">
-                <div class="no-workers">Loading workers...</div>
+                <div class="skeleton"></div>
+                <div class="skeleton"></div>
+                <div class="skeleton"></div>
             </div>
 
-            <h2>Quick Commands</h2>
+            <h2 style="margin-top: 20px;">Quick Commands</h2>
             <div class="quick-commands">
                 <button onclick="setCommand('python --version')">Python Ver</button>
                 <button onclick="setCommand('pip list')">Pip List</button>
@@ -333,8 +512,14 @@
                     <option value="">Select worker...</option>
                 </select>
                 <input type="text" class="command-input" id="command-input" placeholder="Enter shell command (or run Python from editor)">
-                <button class="btn btn-run" onclick="runCommand()" id="run-btn">Run Command</button>
-                <button class="btn btn-run" onclick="runPython()" id="run-python-btn">Run Python</button>
+                <button class="btn btn-run" onclick="runCommand()" id="run-btn">
+                    <span>▶</span>
+                    <span>Run Command</span>
+                </button>
+                <button class="btn btn-run" onclick="runPython()" id="run-python-btn">
+                    <span>▶</span>
+                    <span>Run Python</span>
+                </button>
                 <button class="btn btn-clear" onclick="clearOutput()">Clear</button>
             </div>
 
@@ -342,8 +527,8 @@
                 <div class="editor-header">
                     <h3>Python Editor</h3>
                     <div class="editor-tabs">
-                        <button class="editor-tab active" onclick="switchTab('python')">Python</button>
-                        <button class="editor-tab" onclick="switchTab('shell')">Shell Script</button>
+                        <button class="editor-tab active" onclick="switchTab(event, 'python')">Python</button>
+                        <button class="editor-tab" onclick="switchTab(event, 'shell')">Shell Script</button>
                     </div>
                 </div>
                 <textarea class="code-editor" id="code-editor" placeholder="# Write your Python code here
@@ -360,7 +545,7 @@ print(f'Python version: {sys.version}')
             <div class="output-section">
                 <div class="output-header">
                     <h3>Output</h3>
-                    <span id="exec-time"></span>
+                    <span id="exec-time" style="color: var(--text-secondary); font-size: 12px;"></span>
                 </div>
                 <div class="output-box" id="output-box">Ready. Select a worker and run code.</div>
             </div>
@@ -368,7 +553,10 @@ print(f'Python version: {sys.version}')
     </div>
 
     <div class="status-bar">
-        <span id="status-text">Ready</span>
+        <span class="status-indicator">
+            <span class="status-dot ready" id="status-dot"></span>
+            <span id="status-text">Ready</span>
+        </span>
         <span id="worker-status">No worker selected</span>
     </div>
 
@@ -376,6 +564,7 @@ print(f'Python version: {sys.version}')
         const API_BASE = '/api';
         let selectedWorker = null;
         let currentTab = 'python';
+        let isExecuting = false;
 
         // Code templates
         const templates = {
@@ -419,6 +608,7 @@ except ImportError:
 `,
             train: `# Simple Training Example
 import random
+import time
 
 # Simulated training loop
 print("Starting training simulation...")
@@ -428,6 +618,7 @@ for epoch in range(epochs):
     loss = 1.0 / (epoch + 1) + random.random() * 0.1
     acc = 0.5 + (epoch * 0.1) + random.random() * 0.05
     print(f"Epoch {epoch+1}/{epochs} - Loss: {loss:.4f} - Accuracy: {acc:.2%}")
+    time.sleep(0.5)  # Simulate work
 
 print("\\nTraining complete!")
 `
@@ -457,7 +648,7 @@ print("\\nTraining complete!")
                 // Build worker list
                 list.innerHTML = data.workers.map(w => `
                     <div class="worker-item ${w.online ? '' : 'offline'}" 
-                         onclick="selectWorker('${w.name}')" 
+                         onclick="selectWorker(event, '${w.name}')" 
                          id="worker-${w.name}">
                         <div class="name">${w.name}</div>
                         <div class="info">${w.ip || 'No IP'}</div>
@@ -478,7 +669,8 @@ print("\\nTraining complete!")
             }
         }
 
-        function selectWorker(name) {
+        function selectWorker(event, name) {
+            event.preventDefault();
             // Update visual selection
             document.querySelectorAll('.worker-item').forEach(el => el.classList.remove('selected'));
             const el = document.getElementById('worker-' + name);
@@ -488,14 +680,14 @@ print("\\nTraining complete!")
             document.getElementById('worker-select').value = name;
             selectedWorker = name;
             
-            document.getElementById('worker-status').textContent = 'Worker: ' + name;
+            document.getElementById('worker-status').textContent = '✓ Worker: ' + name;
             document.getElementById('status-text').textContent = 'Ready';
         }
 
         // Sync dropdown to sidebar selection
         document.getElementById('worker-select').addEventListener('change', function() {
             if (this.value) {
-                selectWorker(this.value);
+                selectWorker(event, this.value);
             }
         });
 
@@ -509,7 +701,7 @@ print("\\nTraining complete!")
             }
         }
 
-        function switchTab(tab) {
+        function switchTab(event, tab) {
             currentTab = tab;
             document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
             event.target.classList.add('active');
@@ -567,11 +759,24 @@ print("\\nTraining complete!")
         async function executeOnWorker(worker, command) {
             const outputBox = document.getElementById('output-box');
             const statusText = document.getElementById('status-text');
+            const statusDot = document.getElementById('status-dot');
             const execTime = document.getElementById('exec-time');
+            const runBtn = document.getElementById('run-btn');
+            const runPythonBtn = document.getElementById('run-python-btn');
             
-            outputBox.textContent = 'Executing...';
+            if (isExecuting) return;
+            isExecuting = true;
+            
+            // Show loading animation
+            outputBox.innerHTML = `<div style="display: flex; align-items: center; gap: 10px; justify-content: center; height: 100%;">
+                <div class="loading-spinner"></div>
+                <span>Executing code on ${worker}...</span>
+            </div>`;
             outputBox.className = 'output-box running';
             statusText.textContent = 'Running on ' + worker + '...';
+            statusDot.classList.remove('ready');
+            runBtn.disabled = true;
+            runPythonBtn.disabled = true;
             
             const startTime = Date.now();
             
@@ -579,7 +784,7 @@ print("\\nTraining complete!")
                 const data = await api(`/workers/${worker}/exec`, 'POST', { command });
                 const duration = ((Date.now() - startTime) / 1000).toFixed(2);
                 
-                execTime.textContent = `Execution time: ${duration}s`;
+                execTime.textContent = `⏱ ${duration}s`;
                 
                 let output = '';
                 if (data.output) output += data.output;
@@ -591,13 +796,18 @@ print("\\nTraining complete!")
                 
                 outputBox.textContent = output;
                 outputBox.className = 'output-box' + (data.exit_code !== 0 ? ' error' : '');
-                statusText.textContent = data.exit_code === 0 ? 'Completed successfully' : 'Completed with errors';
+                statusText.textContent = data.exit_code === 0 ? '✓ Completed successfully' : '✗ Completed with errors';
+                statusDot.classList.add('ready');
                 
             } catch (err) {
                 outputBox.textContent = 'Error: ' + err.message;
                 outputBox.className = 'output-box error';
-                statusText.textContent = 'Error';
+                statusText.textContent = '✗ Error';
                 execTime.textContent = '';
+            } finally {
+                isExecuting = false;
+                runBtn.disabled = false;
+                runPythonBtn.disabled = false;
             }
         }
 
@@ -605,6 +815,8 @@ print("\\nTraining complete!")
             document.getElementById('output-box').textContent = 'Ready.';
             document.getElementById('output-box').className = 'output-box';
             document.getElementById('exec-time').textContent = '';
+            document.getElementById('status-text').textContent = 'Ready';
+            document.getElementById('status-dot').classList.add('ready');
         }
 
         // Keyboard shortcuts

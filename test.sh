@@ -1,5 +1,6 @@
 #!/bin/bash
-# Grid-X Test Script - Automates hub + worker setup in Docker containers
+# Grid-X Test Script - Cross-platform (Linux, macOS, Windows WSL2)
+# Automates hub + worker setup in Docker containers
 
 set -e
 
@@ -12,11 +13,52 @@ NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Detect OS
+detect_os() {
+    case "$(uname -s)" in
+        Linux*)
+            if grep -qi microsoft /proc/version 2>/dev/null; then
+                echo "WSL2"
+            else
+                echo "Linux"
+            fi
+            ;;
+        Darwin*)
+            echo "macOS"
+            ;;
+        CYGWIN*|MINGW*|MSYS*)
+            echo "Windows"
+            ;;
+        *)
+            echo "Unknown"
+            ;;
+    esac
+}
+
+OS_TYPE=$(detect_os)
+
+# Platform-specific banner
 echo -e "${BLUE}"
 echo "=============================================="
 echo "       GRID-X RESOURCE MESH"
+echo "       Platform: ${OS_TYPE}"
 echo "=============================================="
 echo -e "${NC}"
+
+# Check if running on native Windows (not WSL)
+if [[ "$OS_TYPE" == "Windows" ]]; then
+    echo -e "${RED}ERROR: This script must be run in WSL2, not native Windows${NC}"
+    echo ""
+    echo "Please do one of the following:"
+    echo "  1. Install WSL2: https://docs.microsoft.com/en-us/windows/wsl/install"
+    echo "  2. Run this script inside WSL2 Ubuntu"
+    echo ""
+    echo "Quick WSL2 setup:"
+    echo "  wsl --install"
+    echo "  wsl --set-default-version 2"
+    echo ""
+    exit 1
+fi
 
 # Check if docker compose is available
 if command -v docker-compose &> /dev/null; then
@@ -25,20 +67,132 @@ elif docker compose version &> /dev/null; then
     COMPOSE="docker compose"
 else
     echo -e "${RED}Error: docker-compose not found${NC}"
+    echo ""
+    case "$OS_TYPE" in
+        WSL2)
+            echo "Install Docker Desktop for Windows with WSL2 integration:"
+            echo "  https://docs.docker.com/desktop/windows/wsl/"
+            ;;
+        macOS)
+            echo "Install Docker Desktop for Mac:"
+            echo "  https://docs.docker.com/desktop/mac/install/"
+            ;;
+        Linux)
+            echo "Install docker-compose:"
+            echo "  sudo curl -L \"https://github.com/docker/compose/releases/latest/download/docker-compose-\$(uname -s)-\$(uname -m)\" -o /usr/local/bin/docker-compose"
+            echo "  sudo chmod +x /usr/local/bin/docker-compose"
+            ;;
+    esac
+    echo ""
     exit 1
 fi
 
-# Get host's IP address
+# Get host's IP address (platform-aware)
 get_host_ip() {
-    # Try to get the main IP (not localhost)
-    ip route get 1 2>/dev/null | awk '{print $7; exit}' || \
-    hostname -I 2>/dev/null | awk '{print $1}' || \
-    echo "YOUR_IP"
+    case "$OS_TYPE" in
+        WSL2)
+            # In WSL2, get the Windows host IP for external access
+            # Try to get WSL2's IP that's accessible from Windows
+            hostname -I 2>/dev/null | awk '{print $1}' || \
+            ip addr show eth0 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1 || \
+            echo "172.17.0.1"
+            ;;
+        macOS)
+            # macOS uses different network interface names
+            ipconfig getifaddr en0 2>/dev/null || \
+            ipconfig getifaddr en1 2>/dev/null || \
+            ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -1 || \
+            echo "YOUR_IP"
+            ;;
+        Linux)
+            # Standard Linux This was Earlier but we fixed it now for macos and WSL2
+            ip route get 1 2>/dev/null | awk '{print $7; exit}' || \
+            hostname -I 2>/dev/null | awk '{print $1}' || \
+            echo "YOUR_IP"
+            ;;
+        *)
+            echo "YOUR_IP"
+            ;;
+    esac
+}
+
+# Platform-specific dependency checks
+check_dependencies() {
+    local missing=0
+    
+    # Check Docker
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}✗ Docker not installed${NC}"
+        case "$OS_TYPE" in
+            WSL2)
+                echo "  Install Docker Desktop for Windows with WSL2 integration"
+                echo "  https://docs.docker.com/desktop/windows/wsl/"
+                ;;
+            macOS)
+                echo "  Install Docker Desktop for Mac"
+                echo "  https://docs.docker.com/desktop/mac/install/"
+                ;;
+            Linux)
+                echo "  Install Docker: curl -fsSL https://get.docker.com | sh"
+                ;;
+        esac
+        missing=1
+    else
+        echo -e "${GREEN}✓ Docker${NC}"
+    fi
+    
+    # Check Docker daemon
+    if ! docker info &>/dev/null 2>&1; then
+        echo -e "${RED}✗ Docker daemon not running${NC}"
+        case "$OS_TYPE" in
+            WSL2)
+                echo "  Start Docker Desktop on Windows"
+                ;;
+            macOS)
+                echo "  Start Docker Desktop"
+                ;;
+            Linux)
+                echo "  Start Docker: sudo systemctl start docker"
+                ;;
+        esac
+        missing=1
+    else
+        echo -e "${GREEN}✓ Docker daemon${NC}"
+    fi
+    
+    # Check Python3
+    if ! command -v python3 &> /dev/null; then
+        echo -e "${YELLOW}⚠ Python3 not found (needed for some commands)${NC}"
+    else
+        echo -e "${GREEN}✓ Python3${NC}"
+    fi
+    
+    return $missing
 }
 
 case "$1" in
+    # ============== CHECK ==============
+    check|deps)
+        echo -e "${YELLOW}Checking dependencies for ${OS_TYPE}...${NC}"
+        echo ""
+        if check_dependencies; then
+            echo ""
+            echo -e "${GREEN}All dependencies satisfied!${NC}"
+        else
+            echo ""
+            echo -e "${RED}Please install missing dependencies${NC}"
+            exit 1
+        fi
+        ;;
+
     # ============== START ==============
     start|up)
+        echo -e "${YELLOW}Checking dependencies...${NC}"
+        if ! check_dependencies; then
+            exit 1
+        fi
+        echo ""
+        
         echo -e "${YELLOW}[1/2] Building containers...${NC}"
         $COMPOSE build
 
@@ -56,7 +210,6 @@ case "$1" in
         echo ""
         echo "Or manually:"
         echo "  docker exec -it gridx-hub bash"
-        echo "  docker exec -it gridx-worker1 bash"
         echo ""
         ;;
 
@@ -64,6 +217,13 @@ case "$1" in
     setup|init)
         HOST_IP=$(get_host_ip)
         echo -e "${YELLOW}[1/2] Initializing Hub (Public IP: ${HOST_IP})...${NC}"
+        
+        if [[ "$OS_TYPE" == "macOS" ]]; then
+            echo -e "${CYAN}Note: On macOS, Docker runs in a VM. Use 'host.docker.internal' for host access${NC}"
+        elif [[ "$OS_TYPE" == "WSL2" ]]; then
+            echo -e "${CYAN}Note: On WSL2, networking is bridged through Windows${NC}"
+        fi
+        
         docker exec gridx-hub python hub.py init --ip "$HOST_IP"
 
         echo -e "${YELLOW}[2/2] Verifying hub...${NC}"
@@ -87,6 +247,8 @@ case "$1" in
 
     # ============== STATUS ==============
     status)
+        echo -e "${YELLOW}=== PLATFORM: ${OS_TYPE} ===${NC}"
+        echo ""
         echo -e "${YELLOW}=== HUB STATUS ===${NC}"
         docker exec gridx-hub python hub.py status
 
@@ -97,7 +259,7 @@ case "$1" in
     # ============== TEST JOB ==============
     test-job|test)
         echo -e "${YELLOW}Running test job...${NC}"
-        docker exec gridx-hub python jobs.py run alpine "echo 'Hello from Grid-X cluster!'; hostname; sleep 5; echo 'Done!'"
+        docker exec gridx-hub python jobs.py run alpine "echo 'Hello from Grid-X cluster on ${OS_TYPE}!'; hostname; sleep 5; echo 'Done!'"
         
         sleep 3
         echo ""
@@ -118,6 +280,13 @@ case "$1" in
 
     # ============== GPU TEST ==============
     test-gpu)
+        if [[ "$OS_TYPE" == "macOS" ]]; then
+            echo -e "${YELLOW}Note: GPU passthrough not supported on macOS Docker${NC}"
+        elif [[ "$OS_TYPE" == "WSL2" ]]; then
+            echo -e "${YELLOW}Note: WSL2 supports GPU with NVIDIA CUDA on WSL2${NC}"
+            echo "See: https://docs.nvidia.com/cuda/wsl-user-guide/index.html"
+        fi
+        
         echo -e "${YELLOW}Running GPU detection job...${NC}"
         docker exec gridx-hub python jobs.py run nvidia/cuda:12.0-base "nvidia-smi || echo 'No GPU available'" --gpus
         
@@ -129,7 +298,7 @@ case "$1" in
 
     # ============== CLUSTER INFO ==============
     cluster|info)
-        echo -e "${YELLOW}=== CLUSTER INFO ===${NC}"
+        echo -e "${YELLOW}=== CLUSTER INFO (${OS_TYPE}) ===${NC}"
         docker exec gridx-hub python jobs.py cluster
         ;;
 
@@ -200,8 +369,9 @@ case "$1" in
         cat > "${BUNDLE_DIR}/join.sh" << 'JOINEOF'
 #!/bin/bash
 # ============================================================
-# Grid-X Worker Join Script
+# Grid-X Worker Join Script - Cross-platform
 # Run this on the remote machine to join the cluster
+# Supports: Linux, macOS, WSL2
 # ============================================================
 
 set -e
@@ -215,6 +385,37 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+# Detect OS
+detect_os() {
+    case "$(uname -s)" in
+        Linux*)
+            if grep -qi microsoft /proc/version 2>/dev/null; then
+                echo "WSL2"
+            else
+                echo "Linux"
+            fi
+            ;;
+        Darwin*)
+            echo "macOS"
+            ;;
+        CYGWIN*|MINGW*|MSYS*)
+            echo "Windows"
+            ;;
+        *)
+            echo "Unknown"
+            ;;
+    esac
+}
+
+OS_TYPE=$(detect_os)
+
+# Check if running on native Windows
+if [[ "$OS_TYPE" == "Windows" ]]; then
+    echo -e "${RED}ERROR: This script must be run in WSL2, not native Windows${NC}"
+    echo "Please run inside WSL2 Ubuntu"
+    exit 1
+fi
+
 # ============================================
 # CONFIGURATION - Will be filled by test.sh
 # ============================================
@@ -226,6 +427,7 @@ HUB_VPN_IP="10.0.0.1"
 echo -e "${BLUE}"
 echo "=============================================="
 echo "       GRID-X - Join the Compute Mesh"
+echo "       Platform: ${OS_TYPE}"
 echo "=============================================="
 echo -e "${NC}"
 
@@ -238,13 +440,25 @@ fi
 # ==================== SYSTEM INFO ====================
 echo -e "${CYAN}[System Information]${NC}"
 
-# Get total CPUs
-TOTAL_CPUS=$(nproc)
+# Get total CPUs (cross-platform)
+if command -v nproc &> /dev/null; then
+    TOTAL_CPUS=$(nproc)
+elif command -v sysctl &> /dev/null; then
+    # macOS
+    TOTAL_CPUS=$(sysctl -n hw.ncpu)
+else
+    TOTAL_CPUS=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || echo "1")
+fi
 echo "  Total CPUs: $TOTAL_CPUS"
 
-# Get total RAM in GB
-TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-TOTAL_RAM_GB=$((TOTAL_RAM_KB / 1024 / 1024))
+# Get total RAM in GB (cross-platform)
+if [[ "$OS_TYPE" == "macOS" ]]; then
+    TOTAL_RAM_BYTES=$(sysctl -n hw.memsize)
+    TOTAL_RAM_GB=$((TOTAL_RAM_BYTES / 1024 / 1024 / 1024))
+else
+    TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    TOTAL_RAM_GB=$((TOTAL_RAM_KB / 1024 / 1024))
+fi
 echo "  Total RAM:  ${TOTAL_RAM_GB} GB"
 
 # Check for NVIDIA GPUs
@@ -259,7 +473,11 @@ if command -v nvidia-smi &> /dev/null; then
         echo "  GPUs:       None detected"
     fi
 else
-    echo "  GPUs:       nvidia-smi not found (no NVIDIA GPU or drivers not installed)"
+    if [[ "$OS_TYPE" == "macOS" ]]; then
+        echo "  GPUs:       Not supported on macOS Docker"
+    else
+        echo "  GPUs:       nvidia-smi not found (no NVIDIA GPU or drivers not installed)"
+    fi
 fi
 
 echo ""
@@ -292,9 +510,9 @@ if ! [[ "$SHARE_RAM" =~ ^[0-9]+$ ]] || [ "$SHARE_RAM" -lt 1 ] || [ "$SHARE_RAM" 
     SHARE_RAM=$DEFAULT_RAM
 fi
 
-# GPU selection (if available)
+# GPU selection (if available and not macOS)
 SHARE_GPUS=0
-if [ "$GPU_COUNT" -gt 0 ]; then
+if [ "$GPU_COUNT" -gt 0 ] && [[ "$OS_TYPE" != "macOS" ]]; then
     echo -n "  GPUs to share (0-$GPU_COUNT) [default: $GPU_COUNT]: "
     read -r SHARE_GPUS
     SHARE_GPUS=${SHARE_GPUS:-$GPU_COUNT}
@@ -325,9 +543,17 @@ if ! command -v wg &> /dev/null; then
     echo -e "${RED}WireGuard not installed!${NC}"
     echo ""
     echo "Install with:"
-    echo "  Arch:   sudo pacman -S wireguard-tools"
-    echo "  Ubuntu: sudo apt install wireguard"
-    echo "  Fedora: sudo dnf install wireguard-tools"
+    case "$OS_TYPE" in
+        macOS)
+            echo "  brew install wireguard-tools"
+            echo "Or download from: https://www.wireguard.com/install/"
+            ;;
+        WSL2|Linux)
+            echo "  Arch:   sudo pacman -S wireguard-tools"
+            echo "  Ubuntu: sudo apt install wireguard"
+            echo "  Fedora: sudo dnf install wireguard-tools"
+            ;;
+    esac
     exit 1
 fi
 echo "  WireGuard: OK"
@@ -336,8 +562,20 @@ echo "  WireGuard: OK"
 if ! command -v docker &> /dev/null; then
     echo -e "${RED}Docker not installed!${NC}"
     echo ""
-    echo "Install from: https://docs.docker.com/get-docker/"
-    echo "Or: curl -fsSL https://get.docker.com | sh"
+    case "$OS_TYPE" in
+        macOS)
+            echo "Install Docker Desktop for Mac:"
+            echo "  https://docs.docker.com/desktop/mac/install/"
+            ;;
+        WSL2)
+            echo "Install Docker Desktop for Windows with WSL2 integration:"
+            echo "  https://docs.docker.com/desktop/windows/wsl/"
+            ;;
+        Linux)
+            echo "Install from: https://docs.docker.com/get-docker/"
+            echo "Or: curl -fsSL https://get.docker.com | sh"
+            ;;
+    esac
     exit 1
 fi
 echo "  Docker: OK"
@@ -345,7 +583,14 @@ echo "  Docker: OK"
 # Check Docker is running
 if ! docker info &>/dev/null; then
     echo -e "${RED}Docker daemon not running!${NC}"
-    echo "Start with: sudo systemctl start docker"
+    case "$OS_TYPE" in
+        macOS|WSL2)
+            echo "Start Docker Desktop"
+            ;;
+        Linux)
+            echo "Start with: sudo systemctl start docker"
+            ;;
+    esac
     exit 1
 fi
 echo "  Docker daemon: OK"
@@ -356,21 +601,37 @@ if [ "$SHARE_GPUS" -gt 0 ]; then
         echo "  NVIDIA runtime: OK"
     else
         echo -e "${YELLOW}  Warning: NVIDIA Docker runtime not detected${NC}"
-        echo "  GPU jobs may not work. Install nvidia-container-toolkit if needed."
+        if [[ "$OS_TYPE" == "WSL2" ]]; then
+            echo "  Install NVIDIA CUDA on WSL2: https://docs.nvidia.com/cuda/wsl-user-guide/"
+        else
+            echo "  Install nvidia-container-toolkit if needed."
+        fi
     fi
 fi
 
 # ==================== SETUP WIREGUARD ====================
 echo -e "${YELLOW}[2/5] Setting up WireGuard VPN...${NC}"
 
-cp "$SCRIPT_DIR/wg0.conf" /etc/wireguard/wg0.conf
-chmod 600 /etc/wireguard/wg0.conf
+# Platform-specific WireGuard config location
+if [[ "$OS_TYPE" == "macOS" ]]; then
+    WG_CONFIG_DIR="/usr/local/etc/wireguard"
+    mkdir -p "$WG_CONFIG_DIR"
+else
+    WG_CONFIG_DIR="/etc/wireguard"
+fi
+
+cp "$SCRIPT_DIR/wg0.conf" "$WG_CONFIG_DIR/wg0.conf"
+chmod 600 "$WG_CONFIG_DIR/wg0.conf"
 
 wg-quick down wg0 2>/dev/null || true
 wg-quick up wg0
 
 echo "  VPN interface: wg0"
-echo "  VPN IP: $(ip addr show wg0 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1)"
+if [[ "$OS_TYPE" == "macOS" ]]; then
+    echo "  VPN IP: $(ifconfig wg0 2>/dev/null | grep 'inet ' | awk '{print $2}')"
+else
+    echo "  VPN IP: $(ip addr show wg0 2>/dev/null | grep 'inet ' | awk '{print $2}' | cut -d/ -f1)"
+fi
 
 # ==================== TEST VPN CONNECTION ====================
 echo -e "${YELLOW}[3/5] Testing VPN connection...${NC}"
@@ -384,6 +645,9 @@ else
     echo "  1. Check that the hub is running"
     echo "  2. Check firewall allows UDP port 51820"
     echo "  3. Verify your internet connection"
+    if [[ "$OS_TYPE" == "macOS" ]]; then
+        echo "  4. On macOS, check System Preferences > Security & Privacy > Firewall"
+    fi
     exit 1
 fi
 
@@ -433,18 +697,20 @@ fi
 # ==================== SAVE CONFIG ====================
 mkdir -p ~/.gridx
 cat > ~/.gridx/worker_config << EOF
+OS_TYPE=$OS_TYPE
 WORKER_NAME=$WORKER_NAME
 SHARE_CPUS=$SHARE_CPUS
 SHARE_RAM=$SHARE_RAM
 SHARE_GPUS=$SHARE_GPUS
 HUB_VPN_IP=$HUB_VPN_IP
-JOINED_AT=$(date -Iseconds)
+JOINED_AT=$(date -Iseconds 2>/dev/null || date +%Y-%m-%dT%H:%M:%S)
 EOF
 
 # ==================== SUCCESS ====================
 echo ""
 echo -e "${GREEN}=============================================="
 echo "  SUCCESS! Joined Grid-X Cluster"
+echo "  Platform: ${OS_TYPE}"
 echo "==============================================${NC}"
 echo ""
 echo "  Worker: $WORKER_NAME"
@@ -466,15 +732,15 @@ echo ""
 JOINEOF
 
         # Replace placeholders in join.sh
-        sed -i "s|__WORKER_NAME__|$WORKER_NAME|g" "${BUNDLE_DIR}/join.sh"
-        sed -i "s|__SWARM_TOKEN__|$SWARM_TOKEN|g" "${BUNDLE_DIR}/join.sh"
+        sed -i.bak "s|__WORKER_NAME__|$WORKER_NAME|g" "${BUNDLE_DIR}/join.sh" && rm -f "${BUNDLE_DIR}/join.sh.bak"
+        sed -i.bak "s|__SWARM_TOKEN__|$SWARM_TOKEN|g" "${BUNDLE_DIR}/join.sh" && rm -f "${BUNDLE_DIR}/join.sh.bak"
         
         chmod +x "${BUNDLE_DIR}/join.sh"
         
         # Create leave script
         cat > "${BUNDLE_DIR}/leave.sh" << 'LEAVEEOF'
 #!/bin/bash
-# Grid-X Worker Leave Script
+# Grid-X Worker Leave Script - Cross-platform
 echo "Leaving Grid-X cluster..."
 
 # Stop the command agent
@@ -494,8 +760,25 @@ LEAVEEOF
         # Create status script
         cat > "${BUNDLE_DIR}/status.sh" << 'STATUSEOF'
 #!/bin/bash
-# Grid-X Worker Status Script
+# Grid-X Worker Status Script - Cross-platform
 echo "=== Grid-X Worker Status ==="
+echo ""
+echo "[Platform]"
+case "$(uname -s)" in
+    Linux*)
+        if grep -qi microsoft /proc/version 2>/dev/null; then
+            echo "  OS: WSL2"
+        else
+            echo "  OS: Linux"
+        fi
+        ;;
+    Darwin*)
+        echo "  OS: macOS"
+        ;;
+    *)
+        echo "  OS: Unknown"
+        ;;
+esac
 echo ""
 echo "[Swarm]"
 docker info 2>/dev/null | grep -A5 "Swarm:" | head -6
@@ -515,6 +798,86 @@ cat ~/.gridx/worker_config 2>/dev/null || echo "No config found"
 STATUSEOF
         chmod +x "${BUNDLE_DIR}/status.sh"
         
+        # Create README
+        cat > "${BUNDLE_DIR}/README.md" << 'READMEEOF'
+# Grid-X Worker Bundle
+
+This bundle allows you to join a Grid-X compute cluster.
+
+## Supported Platforms
+- Linux (native)
+- macOS (Darwin)
+- Windows (via WSL2)
+
+## Prerequisites
+
+### Linux
+```bash
+sudo apt install wireguard docker.io  # Ubuntu/Debian
+sudo pacman -S wireguard-tools docker  # Arch
+```
+
+### macOS
+```bash
+brew install wireguard-tools
+# Install Docker Desktop for Mac
+```
+
+### Windows (WSL2)
+1. Install WSL2: `wsl --install`
+2. Install Docker Desktop with WSL2 integration
+3. Run these scripts inside WSL2 Ubuntu
+
+## Quick Start
+
+```bash
+# Extract the bundle
+tar -xzf gridx-WORKERNAME.tar.gz
+cd gridx-WORKERNAME
+
+# Join the cluster (requires root/sudo)
+sudo ./join.sh
+
+# Check status
+./status.sh
+
+# Leave the cluster
+sudo ./leave.sh
+```
+
+## What Gets Installed
+- WireGuard VPN connection to the hub
+- Docker Swarm worker node
+- Command agent (Python service)
+
+## Files Included
+- `join.sh` - Interactive setup script
+- `leave.sh` - Leave the cluster
+- `status.sh` - Check connection status
+- `wg0.conf` - WireGuard VPN configuration
+- `worker.py` - Command agent (if available)
+
+## Troubleshooting
+
+### Cannot reach hub
+1. Check your internet connection
+2. Verify UDP port 51820 is not blocked by firewall
+3. Check hub is running: ping 10.0.0.1 (after VPN is up)
+
+### Docker errors
+- Ensure Docker daemon is running
+- On macOS/WSL2: Start Docker Desktop
+- On Linux: `sudo systemctl start docker`
+
+### VPN issues
+- Check WireGuard is installed: `wg --version`
+- View VPN status: `wg show`
+- Restart VPN: `sudo wg-quick down wg0 && sudo wg-quick up wg0`
+
+## Support
+For issues, contact your Grid-X cluster administrator.
+READMEEOF
+        
         # Create tarball
         TARBALL="/tmp/gridx-${WORKER_NAME}.tar.gz"
         tar -czf "$TARBALL" -C /tmp "gridx-${WORKER_NAME}"
@@ -522,11 +885,12 @@ STATUSEOF
         echo ""
         echo -e "${GREEN}=============================================="
         echo "  EXTERNAL WORKER BUNDLE CREATED"
+        echo "  Platform-compatible: Linux, macOS, WSL2"
         echo "==============================================${NC}"
         echo ""
         echo -e "${CYAN}Bundle location:${NC} ${TARBALL}"
         echo ""
-        echo -e "${CYAN}Send to remote machine:${NC}"
+        echo -e "${CYAN}Transfer to remote machine:${NC}"
         echo "  scp ${TARBALL} user@remote-host:~/"
         echo ""
         echo -e "${CYAN}On the remote machine run:${NC}"
@@ -534,11 +898,29 @@ STATUSEOF
         echo "  cd gridx-${WORKER_NAME}"
         echo "  sudo ./join.sh"
         echo ""
-        echo -e "${CYAN}Or serve via HTTP (run on this machine):${NC}"
-        echo "  cd /tmp && python3 -m http.server 8000"
-        echo "  # Remote: curl -O http://${HOST_IP}:8000/gridx-${WORKER_NAME}.tar.gz"
+        
+        case "$OS_TYPE" in
+            WSL2)
+                WINDOWS_IP=$(ip route | grep default | awk '{print $3}')
+                echo -e "${CYAN}Or serve via HTTP (WSL2):${NC}"
+                echo "  cd /tmp && python3 -m http.server 8000"
+                echo "  # Access from Windows: http://${WINDOWS_IP}:8000/"
+                ;;
+            macOS)
+                echo -e "${CYAN}Or serve via HTTP (macOS):${NC}"
+                echo "  cd /tmp && python3 -m http.server 8000"
+                echo "  # Access: http://$(get_host_ip):8000/"
+                ;;
+            *)
+                echo -e "${CYAN}Or serve via HTTP:${NC}"
+                echo "  cd /tmp && python3 -m http.server 8000"
+                echo "  # Remote: curl -O http://${HOST_IP}:8000/gridx-${WORKER_NAME}.tar.gz"
+                ;;
+        esac
+        
         echo ""
         echo -e "${CYAN}Bundle contents:${NC}"
+        echo "  README.md  - Platform-specific instructions"
         echo "  join.sh    - Interactive setup script"
         echo "  leave.sh   - Leave the cluster"
         echo "  status.sh  - Check connection status"
@@ -583,8 +965,19 @@ STATUSEOF
         echo -e "${YELLOW}Starting HTTP server to serve worker bundles...${NC}"
         HOST_IP=$(get_host_ip)
         echo ""
-        echo "Other machines can download bundles from:"
-        echo "  http://${HOST_IP}:8000/"
+        
+        case "$OS_TYPE" in
+            WSL2)
+                WINDOWS_IP=$(ip route | grep default | awk '{print $3}')
+                echo "Access from WSL2: http://${HOST_IP}:8000/"
+                echo "Access from Windows: http://${WINDOWS_IP}:8000/"
+                ;;
+            *)
+                echo "Other machines can download bundles from:"
+                echo "  http://${HOST_IP}:8000/"
+                ;;
+        esac
+        
         echo ""
         echo "Press Ctrl+C to stop"
         cd /tmp && python3 -m http.server 8000
@@ -615,10 +1008,13 @@ STATUSEOF
         ;;
 
     # ============== HELP ==============
-    *)
+    help|--help|-h)
         echo "Usage: $0 {command}"
         echo ""
+        echo -e "${CYAN}Platform: ${OS_TYPE}${NC}"
+        echo ""
         echo -e "${CYAN}Container Management:${NC}"
+        echo "  check         - Check dependencies for your platform"
         echo "  start         - Build and start hub container"
         echo "  setup         - Initialize hub (WireGuard + Swarm)"
         echo "  stop          - Stop hub container"
@@ -646,10 +1042,35 @@ STATUSEOF
         echo "  hub           - Open shell in hub container"
         echo ""
         echo -e "${CYAN}Quick Start:${NC}"
+        echo "  $0 check"
         echo "  $0 start && sleep 10 && $0 setup"
         echo "  $0 add-external myworker"
         echo "  # Transfer bundle to worker machine and run: sudo ./join.sh"
         echo "  $0 ping-workers"
         echo ""
+        echo -e "${CYAN}Platform Notes:${NC}"
+        case "$OS_TYPE" in
+            WSL2)
+                echo "  - Running on WSL2 (Windows Subsystem for Linux)"
+                echo "  - Docker Desktop integration required"
+                echo "  - Network accessible from both WSL2 and Windows"
+                ;;
+            macOS)
+                echo "  - Running on macOS"
+                echo "  - Docker runs in a VM (limited GPU support)"
+                echo "  - Use 'host.docker.internal' for host access"
+                ;;
+            Linux)
+                echo "  - Running on native Linux"
+                echo "  - Full Docker and GPU support"
+                ;;
+        esac
+        echo ""
+        ;;
+
+    *)
+        echo -e "${YELLOW}Unknown command: $1${NC}"
+        echo "Run '$0 help' for usage information"
+        exit 1
         ;;
 esac
