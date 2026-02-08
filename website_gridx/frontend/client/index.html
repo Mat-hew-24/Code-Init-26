@@ -820,13 +820,9 @@
                 
                 <div class="action-group">
                     <label>▶ Execute:</label>
-                    <button class="btn btn-safe" onclick="safeRunPython()" id="safe-run-btn">
-                        <span>🛡</span>
-                        <span>Safe Run</span>
-                    </button>
                     <button class="btn btn-run" onclick="runPython()" id="run-python-btn">
                         <span>▶</span>
-                        <span>Quick Run</span>
+                        <span>Run</span>
                     </button>
                 </div>
                 
@@ -890,6 +886,7 @@ print(f'Python version: {sys.version}')
             <span class="status-dot ready" id="status-dot"></span>
             <span id="status-text">Ready</span>
         </span>
+        <span id="hub-status" style="margin-right: 20px;">Hub: Loading...</span>
         <span id="worker-status">No worker selected</span>
     </div>
 
@@ -978,21 +975,27 @@ print("\\nTraining complete!")
                     return;
                 }
 
+                // Sort workers: online first, then offline
+                const sortedWorkers = [...data.workers].sort((a, b) => {
+                    if (a.online === b.online) return 0;
+                    return a.online ? -1 : 1;
+                });
+
                 // Build worker list
-                list.innerHTML = data.workers.map(w => `
+                list.innerHTML = sortedWorkers.map(w => `
                     <div class="worker-item ${w.online ? '' : 'offline'}" 
                          onclick="selectWorker(event, '${w.name}')" 
                          id="worker-${w.name}">
                         <div class="name">${w.name}</div>
                         <div class="info">${w.ip || 'No IP'}</div>
-                        <div class="info">${w.cpus ? w.cpus + ' CPU' : ''} ${w.memory ? w.memory + 'GB RAM' : ''} ${w.gpus ? w.gpus + ' GPU' : ''}</div>
+                        <div class="info" style="font-weight: 500; color: var(--primary); margin: 6px 0;">${w.cpus ? w.cpus + ' CPU' : ''} ${w.memory ? w.memory + 'GB' : ''} ${w.gpus ? w.gpus + '×GPU' : ''}</div>
                         <span class="status ${w.online ? 'online' : 'offline'}">${w.online ? 'ONLINE' : 'OFFLINE'}</span>
                     </div>
                 `).join('');
 
-                // Build select options
+                // Build select options (only online workers)
                 select.innerHTML = '<option value="">Select worker...</option>' +
-                    data.workers
+                    sortedWorkers
                         .filter(w => w.online)
                         .map(w => `<option value="${w.name}">${w.name} (${w.ip})</option>`)
                         .join('');
@@ -1096,6 +1099,7 @@ print("\\nTraining complete!")
             const execTime = document.getElementById('exec-time');
             const runBtn = document.getElementById('run-btn');
             const runPythonBtn = document.getElementById('run-python-btn');
+            const safeRunBtn = document.getElementById('safe-run-btn');
             
             if (isExecuting) return;
             isExecuting = true;
@@ -1110,6 +1114,7 @@ print("\\nTraining complete!")
             statusDot.classList.remove('ready');
             runBtn.disabled = true;
             runPythonBtn.disabled = true;
+            if (safeRunBtn) safeRunBtn.disabled = true;
             
             const startTime = Date.now();
             
@@ -1141,6 +1146,7 @@ print("\\nTraining complete!")
                 isExecuting = false;
                 runBtn.disabled = false;
                 runPythonBtn.disabled = false;
+                if (safeRunBtn) safeRunBtn.disabled = false;
             }
         }
 
@@ -1409,11 +1415,26 @@ print("\\nTraining complete!")
             }
         });
 
+        async function loadHubStatus() {
+            try {
+                const data = await api('/workers/ping');
+                const hubStatus = document.getElementById('hub-status');
+                const onlineCount = data.online || 0;
+                const totalCount = data.total || 0;
+                hubStatus.textContent = `Hub: ${onlineCount}/${totalCount} workers online`;
+            } catch (err) {
+                console.error('Failed to load hub status:', err);
+                document.getElementById('hub-status').textContent = 'Hub: Offline';
+            }
+        }
+
         // Initial load
         loadWorkers();
+        loadHubStatus();
         
         // Refresh workers every 30s
         setInterval(loadWorkers, 30000);
+        setInterval(loadHubStatus, 30000);
     </script>
 </body>
 </html>
