@@ -690,31 +690,60 @@
           const data = await api("/status");
           const div = document.getElementById("hub-status");
 
+          // Handle case where API returns undefined or null
+          if (!data) {
+            div.innerHTML = `
+              <div class="card" style="text-align: center; color: var(--error);">
+                <h3>⚠️ No Status Data</h3>
+                <div class="info">Unable to retrieve hub status information</div>
+              </div>
+            `;
+            return;
+          }
+
           const swarmNodes = data.swarm?.nodes?.length || 0;
           const vpnStatus = data.wireguard?.status || "unknown";
 
-          document.getElementById("swarm-nodes").textContent = swarmNodes;
-          document.getElementById("vpn-status").textContent =
-            vpnStatus.toUpperCase();
+          // Update VPN status in stats (only if element exists)
+          const vpnStatusElement = document.getElementById("vpn-status");
+          if (vpnStatusElement) {
+            vpnStatusElement.textContent = vpnStatus.toUpperCase();
+          }
 
           div.innerHTML = `
                     <div class="grid">
                         <div class="card">
                             <h3>🔒 WireGuard VPN</h3>
-                            <div class="info">Status: <span>${vpnStatus}</span></div>
+                            <div class="info">Status: <span style="color: ${vpnStatus === "running" ? "var(--success)" : "var(--error)"}">${vpnStatus.toUpperCase()}</span></div>
                             <div class="info">Hub IP: <span>${data.hub_ip || "-"}</span></div>
                             <div class="info">Public IP: <span>${data.public_ip || "-"}</span></div>
                             <div class="info">Connected Peers: <span>${data.wireguard?.connected_peers || 0}</span></div>
                         </div>
                         <div class="card">
                             <h3>🐳 Docker Swarm</h3>
-                            <div class="info">Status: <span>${data.swarm?.status || "unknown"}</span></div>
+                            <div class="info">Status: <span style="color: ${data.swarm?.status === "active" ? "var(--success)" : "var(--error)"}">${(data.swarm?.status || "unknown").toUpperCase()}</span></div>
                             <div class="info">Nodes: <span>${swarmNodes}</span></div>
+                            <div class="info">Leader: <span>${data.swarm?.leader ? "Yes" : "No"}</span></div>
+                        </div>
+                        <div class="card">
+                            <h3>📊 System Info</h3>
+                            <div class="info">Uptime: <span>${data.uptime || "-"}</span></div>
+                            <div class="info">Version: <span>${data.version || "Unknown"}</span></div>
+                            <div class="info">Workers: <span>${data.worker_count || 0}</span></div>
                         </div>
                     </div>
                 `;
         } catch (err) {
           console.error("Failed to load hub status:", err);
+          const div = document.getElementById("hub-status");
+          div.innerHTML = `
+            <div class="card" style="text-align: center; color: var(--error);">
+              <h3>❌ Connection Error</h3>
+              <div class="info">Failed to connect to hub status API</div>
+              <div class="info" style="font-size: 12px; margin-top: 8px;">Error: ${err.message || "Unknown error"}</div>
+              <button class="btn btn-primary" onclick="loadHubStatus()" style="margin-top: 12px;">Retry</button>
+            </div>
+          `;
         }
       }
 

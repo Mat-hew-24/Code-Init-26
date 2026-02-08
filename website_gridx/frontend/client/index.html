@@ -135,6 +135,25 @@
             margin: 2px 0;
         }
 
+        .worker-item .resources {
+            font-size: 11px;
+            color: var(--text-primary);
+            margin: 4px 0;
+            padding: 4px 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .worker-item .resource-item {
+            display: inline-block;
+            margin-right: 8px;
+            padding: 2px 6px;
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 2px;
+            color: var(--primary-light);
+        }
+
         .worker-item .status {
             display: inline-block;
             padding: 4px 10px;
@@ -282,17 +301,6 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
         }
-        
-        .btn-safe {
-            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-        
-        .btn-safe:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-        }
 
         .btn-clear {
             background: var(--bg-tertiary);
@@ -303,28 +311,6 @@
         .btn-clear:hover {
             background: var(--error);
             color: white;
-        }
-
-        .btn-analyze {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
-        }
-        
-        .btn-analyze:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
-        }
-        
-        .btn-safe {
-            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
-            color: white;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-        
-        .btn-safe:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
         }
 
         .action-group {
@@ -886,7 +872,6 @@ print(f'Python version: {sys.version}')
             <span class="status-dot ready" id="status-dot"></span>
             <span id="status-text">Ready</span>
         </span>
-        <span id="hub-status" style="margin-right: 20px;">Hub: Loading...</span>
         <span id="worker-status">No worker selected</span>
     </div>
 
@@ -972,36 +957,54 @@ print("\\nTraining complete!")
                 
                 if (!data.workers || data.workers.length === 0) {
                     list.innerHTML = '<div class="no-workers">No workers available</div>';
+                    updateHubStatus({ workers: [], hub_status: 'no_workers' });
                     return;
                 }
 
                 // Sort workers: online first, then offline
-                const sortedWorkers = [...data.workers].sort((a, b) => {
-                    if (a.online === b.online) return 0;
-                    return a.online ? -1 : 1;
+                const sortedWorkers = data.workers.sort((a, b) => {
+                    if (a.online && !b.online) return -1;
+                    if (!a.online && b.online) return 1;
+                    return a.name.localeCompare(b.name);
                 });
 
                 // Build worker list
-                list.innerHTML = sortedWorkers.map(w => `
-                    <div class="worker-item ${w.online ? '' : 'offline'}" 
-                         onclick="selectWorker(event, '${w.name}')" 
-                         id="worker-${w.name}">
-                        <div class="name">${w.name}</div>
-                        <div class="info">${w.ip || 'No IP'}</div>
-                        <div class="info" style="font-weight: 500; color: var(--primary); margin: 6px 0;">${w.cpus ? w.cpus + ' CPU' : ''} ${w.memory ? w.memory + 'GB' : ''} ${w.gpus ? w.gpus + '×GPU' : ''}</div>
-                        <span class="status ${w.online ? 'online' : 'offline'}">${w.online ? 'ONLINE' : 'OFFLINE'}</span>
-                    </div>
-                `).join('');
+                list.innerHTML = sortedWorkers.map(w => {
+                    const resources = [];
+                    if (w.cpus) resources.push(`💻 ${w.cpus} CPU`);
+                    if (w.memory) resources.push(`🧠 ${w.memory}GB`);
+                    if (w.gpus) resources.push(`🚀 ${w.gpus} GPU`);
+                    if (w.storage) resources.push(`💾 ${w.storage}GB`);
+                    
+                    return `
+                        <div class="worker-item ${w.online ? '' : 'offline'}" 
+                             onclick="selectWorker(event, '${w.name}')" 
+                             id="worker-${w.name}">
+                            <div class="name">${w.name}</div>
+                            <div class="info">${w.ip || 'No IP'}</div>
+                            ${resources.length > 0 ? `
+                                <div class="resources">
+                                    ${resources.map(r => `<span class="resource-item">${r}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            <span class="status ${w.online ? 'online' : 'offline'}">${w.online ? 'ONLINE' : 'OFFLINE'}</span>
+                        </div>
+                    `;
+                }).join('');
 
-                // Build select options (only online workers)
+                // Build select options (online workers only)
                 select.innerHTML = '<option value="">Select worker...</option>' +
                     sortedWorkers
                         .filter(w => w.online)
                         .map(w => `<option value="${w.name}">${w.name} (${w.ip})</option>`)
                         .join('');
 
+                // Update hub status
+                updateHubStatus(data);
+
             } catch (err) {
                 console.error('Failed to load workers:', err);
+                updateHubStatus({ workers: [], hub_status: 'error' });
             }
         }
 
@@ -1099,7 +1102,6 @@ print("\\nTraining complete!")
             const execTime = document.getElementById('exec-time');
             const runBtn = document.getElementById('run-btn');
             const runPythonBtn = document.getElementById('run-python-btn');
-            const safeRunBtn = document.getElementById('safe-run-btn');
             
             if (isExecuting) return;
             isExecuting = true;
@@ -1114,7 +1116,6 @@ print("\\nTraining complete!")
             statusDot.classList.remove('ready');
             runBtn.disabled = true;
             runPythonBtn.disabled = true;
-            if (safeRunBtn) safeRunBtn.disabled = true;
             
             const startTime = Date.now();
             
@@ -1146,7 +1147,6 @@ print("\\nTraining complete!")
                 isExecuting = false;
                 runBtn.disabled = false;
                 runPythonBtn.disabled = false;
-                if (safeRunBtn) safeRunBtn.disabled = false;
             }
         }
 
@@ -1217,168 +1217,6 @@ print("\\nTraining complete!")
             }
         }
 
-        async function safeRunPython() {
-            const worker = selectedWorker || document.getElementById('worker-select').value;
-            if (!worker) {
-                alert('Please select a worker first');
-                return;
-            }
-
-            const code = document.getElementById('code-editor').value.trim();
-            if (!code) {
-                alert('Please enter some Python code to execute');
-                return;
-            }
-
-            if (isExecuting) return;
-            isExecuting = true;
-
-            const outputBox = document.getElementById('output-box');
-            const statusText = document.getElementById('status-text');
-            const runBtn = document.getElementById('safe-run-btn');
-            const analyzeBtn = document.getElementById('analyze-btn');
-            
-            // Show loading
-            outputBox.innerHTML = `<div style="display: flex; align-items: center; gap: 10px; justify-content: center; height: 100%;">
-                <div class="loading-spinner"></div>
-                <span>Analyzing and executing code safely...</span>
-            </div>`;
-            outputBox.className = 'output-box running';
-            statusText.textContent = 'Safe execution starting...';
-            runBtn.disabled = true;
-            analyzeBtn.disabled = true;
-
-            try {
-                // Submit job for safe execution
-                const jobResponse = await api('/exec/safe-execute', 'POST', {
-                    worker: worker,
-                    code: code,
-                    user_id: 'web-client',
-                    allow_risky: false,
-                    timeout: null  // No timeout for LLM workloads
-                });
-
-                if (!jobResponse.success) {
-                    throw new Error(jobResponse.error || 'Failed to submit job');
-                }
-
-                currentJobId = jobResponse.job_id;
-                
-                // Show job panel
-                updateJobPanel(jobResponse.job_id);
-                document.getElementById('job-panel').classList.add('visible');
-                
-                // Start monitoring job
-                monitorJob(jobResponse.job_id);
-                
-            } catch (error) {
-                outputBox.textContent = 'Error: ' + error.message;
-                outputBox.className = 'output-box error';
-                statusText.textContent = '✗ Error';
-                isExecuting = false;
-                runBtn.disabled = false;
-                analyzeBtn.disabled = false;
-            }
-        }
-
-        async function monitorJob(jobId) {
-            if (!jobId) return;
-            
-            jobCheckInterval = setInterval(async () => {
-                try {
-                    const job = await api(`/exec/jobs/${jobId}`, 'GET');
-                    updateJobPanel(jobId, job);
-                    
-                    if (job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') {
-                        clearInterval(jobCheckInterval);
-                        jobCheckInterval = null;
-                        currentJobId = null;
-                        isExecuting = false;
-                        document.getElementById('safe-run-btn').disabled = false;
-                        document.getElementById('analyze-btn').disabled = false;
-                        
-                        // Show final results
-                        const outputBox = document.getElementById('output-box');
-                        const statusText = document.getElementById('status-text');
-                        
-                        if (job.status === 'completed' && job.result) {
-                            let output = '';
-                            if (job.result.output) output += job.result.output;
-                            if (job.result.error) {
-                                if (output) output += '\\n';
-                                output += '[STDERR]\\n' + job.result.error;
-                            }
-                            output += `\\n\\n[Job completed in ${job.metrics.execution_time.toFixed(2)}s]`;
-                            
-                            outputBox.textContent = output;
-                            outputBox.className = 'output-box' + (job.result.exit_code !== 0 ? ' error' : '');
-                            statusText.textContent = job.result.exit_code === 0 ? '✓ Completed successfully' : '✗ Completed with errors';
-                        } else {
-                            outputBox.textContent = `Job ${job.status}: ${job.error || 'Unknown error'}`;
-                            outputBox.className = 'output-box error';
-                            statusText.textContent = `✗ Job ${job.status}`;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error monitoring job:', error);
-                }
-            }, 2000); // Check every 2 seconds
-        }
-
-        async function updateJobPanel(jobId, jobData = null) {
-            const jobInfo = document.getElementById('job-info');
-            
-            try {
-                const job = jobData || await api(`/exec/jobs/${jobId}`, 'GET');
-                
-                const progressPercent = Math.round(job.metrics.progress * 100);
-                const duration = job.metrics.execution_time || 0;
-                
-                jobInfo.innerHTML = `
-                    <div class="job-info">
-                        <span><strong>Job ID:</strong> ${job.job_id.substring(0, 8)}...</span>
-                        <span class="job-status ${job.status}">${job.status}</span>
-                        <span><strong>Worker:</strong> ${job.worker}</span>
-                        <span><strong>Duration:</strong> ${duration.toFixed(1)}s</span>
-                    </div>
-                    
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${progressPercent}%"></div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--text-secondary);">
-                        <span>Progress: ${progressPercent}%</span>
-                        ${job.status === 'running' ? `
-                            <button class="btn btn-clear" onclick="cancelJob('${job.job_id}')" style="padding: 4px 12px; font-size: 11px;">
-                                Cancel Job
-                            </button>
-                        ` : ''}
-                    </div>
-                `;
-                
-            } catch (error) {
-                jobInfo.innerHTML = `<div class="issue-item high">Error loading job details: ${error.message}</div>`;
-            }
-        }
-
-        async function cancelJob(jobId) {
-            if (!confirm('Are you sure you want to cancel this job?')) return;
-            
-            try {
-                await api(`/exec/jobs/${jobId}/control`, 'POST', null, { action: 'cancel' });
-                if (jobCheckInterval) {
-                    clearInterval(jobCheckInterval);
-                    jobCheckInterval = null;
-                }
-                currentJobId = null;
-                isExecuting = false;
-                document.getElementById('safe-run-btn').disabled = false;
-                document.getElementById('analyze-btn').disabled = false;
-            } catch (error) {
-                alert('Failed to cancel job: ' + error.message);
-            }
-        }
-
         function hideAnalysis() {
             document.getElementById('analysis-panel').classList.remove('visible');
         }
@@ -1387,17 +1225,29 @@ print("\\nTraining complete!")
             document.getElementById('job-panel').classList.remove('visible');
         }
 
-        function toggleJobPanel() {
-            const panel = document.getElementById('job-panel');
-            if (panel.classList.contains('visible')) {
-                hideJobPanel();
+        // Hub status management
+        function updateHubStatus(data) {
+            const statusText = document.getElementById('status-text');
+            const statusDot = document.getElementById('status-dot');
+            
+            if (data.hub_status === 'error' || !data.workers) {
+                statusText.textContent = 'Hub Offline';
+                statusDot.classList.remove('ready');
+                statusDot.style.background = '#ef4444';
+                return;
+            }
+            
+            const onlineWorkers = data.workers.filter(w => w.online).length;
+            const totalWorkers = data.workers.length;
+            
+            if (onlineWorkers === 0) {
+                statusText.textContent = 'No Workers Online';
+                statusDot.classList.remove('ready');
+                statusDot.style.background = '#f59e0b';
             } else {
-                if (currentJobId) {
-                    updateJobPanel(currentJobId);
-                } else {
-                    document.getElementById('job-info').innerHTML = '<div>No active jobs</div>';
-                }
-                panel.classList.add('visible');
+                statusText.textContent = `Hub Ready (${onlineWorkers}/${totalWorkers} workers)`;
+                statusDot.classList.add('ready');
+                statusDot.style.background = '#10b981';
             }
         }
 
@@ -1415,26 +1265,11 @@ print("\\nTraining complete!")
             }
         });
 
-        async function loadHubStatus() {
-            try {
-                const data = await api('/workers/ping');
-                const hubStatus = document.getElementById('hub-status');
-                const onlineCount = data.online || 0;
-                const totalCount = data.total || 0;
-                hubStatus.textContent = `Hub: ${onlineCount}/${totalCount} workers online`;
-            } catch (err) {
-                console.error('Failed to load hub status:', err);
-                document.getElementById('hub-status').textContent = 'Hub: Offline';
-            }
-        }
-
         // Initial load
         loadWorkers();
-        loadHubStatus();
         
         // Refresh workers every 30s
         setInterval(loadWorkers, 30000);
-        setInterval(loadHubStatus, 30000);
     </script>
 </body>
 </html>
